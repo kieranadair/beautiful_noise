@@ -4,7 +4,14 @@ from snowflake.snowpark.functions import col, when_not_matched, lit, call_builti
 from config import DB, SC, STAGE
 import json, uuid, hashlib
 from io import BytesIO
-@st.cache_resource
+def _check_session(S):
+    """Checks whether the cached resource is still valid — if it returns False"""
+    try:
+        S.range(1).collect()
+        return True
+    except:
+        return False
+@st.cache_resource(validate=_check_session)
 def get_session():
     S = Session.builder.configs(st.secrets["connections"]["snowflake"]).create()
     S.sql(f"USE SCHEMA {DB}.{SC}").collect()
@@ -51,9 +58,3 @@ def log_processed(S, file_name, bands, date, venue, event_name, matched_bands, i
     ).with_column("bands", parse_json(col("bands"))) \
      .with_column("matched_bands", parse_json(col("matched_bands"))) \
      .write.save_as_table("POSTERS_PROCESSED", mode="append", column_order="name")
-def remove_from_stage(S, stage_filename):
-    """Remove a file from the POSTERS stage."""
-    S.file.remove(f"@{STAGE}/{stage_filename}")
-def check_duplicate_md5(md5_hash, all_posters):
-    """Check if an MD5 hash matches any existing poster. Returns True if duplicate found."""
-    return any(p["MD5_HASH"] == md5_hash for p in all_posters)
