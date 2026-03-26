@@ -55,16 +55,18 @@ with left:
         st.subheader("Poster Details")
         bands = st.multiselect("Bands / Artists", options=band_options, default=r.get("matched_bands", []), accept_new_options=True, disabled=form_disabled)
         event_date = st.date_input("Event Date", value=r.get("inferred_date"), format="DD/MM/YYYY", disabled=form_disabled)
-        venue = st.selectbox("Venue", options=venue_options, index=venue_options.index(r["matched_venue"]) if r.get("matched_venue") else None, accept_new_options=True, disabled=form_disabled)
+        venue = st.selectbox("Venue", options=venue_options, index=venue_options.index(r["matched_venue"]) if r.get("matched_venue") in venue_options else None, accept_new_options=True, disabled=form_disabled)
         event_name = st.text_input("Event Name", value=r.get("normed_event_name", ""), placeholder="Leave empty if not a named event", disabled=form_disabled)
-        designer_name = st.selectbox("Designer", options=all_designers, index=None, accept_new_options=True, disabled=form_disabled)
+        designer_name = st.selectbox("Designer", options=sorted(set(all_designers + ["UNKNOWN"])), index=None, accept_new_options=True, disabled=form_disabled)
         permission = st.checkbox("I have the right to share this poster and agree to the [Terms of Service](/terms_of_service)", disabled=form_disabled)
         submitted = st.form_submit_button("Save Poster ✓", type="primary", disabled=form_disabled)
 
     if submitted and not permission:
         st.error("Please confirm you have permission before saving.")
     elif submitted and (not bands or not venue):
-       st.error("Please ensure both the the bands and venues are filled in.")
+       st.error("Please ensure both the bands and venues are filled in.")
+    elif submitted and not designer_name:
+        st.warning("Please select or enter a designer. If unknown, choose 'UNKNOWN' from the list.")
 
     elif submitted:
         if check_semantic_duplicate(bands, venue, event_date, all_posters):
@@ -100,7 +102,7 @@ with right:
             if Path(img.name).suffix.lower() == ".pdf":
                 img = pdf_to_image_bytes(img)
             ss["processed_img"] = preprocess_image(img, "JPEG")
-            md5_hash = hashlib.md5(ss["processed_img"].getvalue()).hexdigest()
+            md5_hash = hashlib.md5(ss["processed_img"].getvalue(), usedforsecurity=False).hexdigest()
             if check_duplicate_md5(md5_hash, all_posters):
                 ss["upload_error"] = "This poster has already been uploaded."
                 ss["upload_key"] += 1

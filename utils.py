@@ -46,18 +46,20 @@ def preprocess_image(file: BytesIO, format: str = "JPEG", max_dim: int = 1200, m
     return buf
 def pdf_to_image_bytes(file) -> BytesIO:
     """Convert first page of a PDF to JPEG bytes. Returns a BytesIO object."""
-    doc = fitz.open(stream=file, filetype="pdf")
-    page = doc[0]
-    pix = page.get_pixmap(dpi=150)
-    return BytesIO(pix.tobytes("jpeg"))
+    with fitz.open(stream=file, filetype="pdf") as doc:
+        pix = doc[0].get_pixmap(dpi=150)
+        return BytesIO(pix.tobytes("jpeg"))
 def get_filtered_posters(all_posters, band_filter=None, venue_filter=None, designer_filter=None, month_range=None):
     posters = all_posters
     if band_filter:
-        posters = [p for p in posters if any(b in p["BANDS"] for b in band_filter)]
+        band_set = set(band_filter)
+        posters = [p for p in posters if any(b in band_set for b in p["BANDS"])]
     if venue_filter:
-        posters = [p for p in posters if p["VENUE_NAME"] in venue_filter]
+        venue_set = set(venue_filter)
+        posters = [p for p in posters if p["VENUE_NAME"] in venue_set]
     if designer_filter:
-        posters = [p for p in posters if p["DESIGNER_NAME"] in designer_filter]
+        designer_set = set(designer_filter)
+        posters = [p for p in posters if p["DESIGNER_NAME"] in designer_set]
     if month_range:
         posters = [p for p in posters if month_range[0] <= p["DATE"].replace(day=1) <= month_range[1]]
     return posters
@@ -73,7 +75,7 @@ def prepare_review_defaults(bands, date_str, venue, event_name, all_bands, all_v
     
     Returns matched_bands, matched_venue, event_name, inferred_date.
     """
-    normed_bands = [normalise(b) for b in bands if normalise(b)]
+    normed_bands = [n for b in bands if (n := normalise(b))]
     matched_bands = [fuzzy_match(b, all_bands, threshold=90) for b in normed_bands]
 
     inferred_date = infer_date(date_str)
@@ -87,11 +89,11 @@ def prepare_review_defaults(bands, date_str, venue, event_name, all_bands, all_v
 def prepare_save_data(bands, event_date, venue, event_name, designer_name):
     """Normalise raw form values into a clean dict ready for save_poster()."""
     return {
-        "bands": [normalise(b) for b in bands if normalise(b)],
+        "bands": [n for b in bands if (n := normalise(b))],
         "event_date": event_date,
         "venue": normalise(venue) or "",
         "event_name": normalise(event_name),
-        "designer_name": normalise(designer_name) or "UNKNOWN"
+        "designer_name": normalise(designer_name)
     }
 def check_duplicate_md5(md5_hash, all_posters):
     """Check if an MD5 hash matches any existing poster. Returns True if duplicate found."""

@@ -2,7 +2,7 @@ import streamlit as st
 from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col, when_not_matched, lit, call_builtin, parse_json
 from config import DB, SC, STAGE
-import json, uuid, hashlib
+import json, uuid
 from io import BytesIO
 def _check_session(S):
     """Checks whether the cached resource is still valid — if it returns False"""
@@ -23,16 +23,33 @@ def get_or_insert(S, table, match_col, match_val):
     target.merge(source, target[match_col] == source[match_col],
                  [when_not_matched().insert({match_col: source[match_col]})])
     return target.filter(col(match_col) == match_val).select(id_col).collect()[0][0]
+def get_or_insert_event(S, event_name, event_date, venue_id):
+    source = S.create_dataframe(
+        [[event_name, str(event_date), venue_id]],
+        schema=["EVENT_NAME", "DATE", "VENUE_ID"]
+    )
+    target = S.table("EVENTS")
+    target.merge(
+        source,
+        (target["EVENT_NAME"] == source["EVENT_NAME"]) &
+        (target["DATE"] == source["DATE"]) &
+        (target["VENUE_ID"] == source["VENUE_ID"]),
+        [when_not_matched().insert({
+            "EVENT_NAME": source["EVENT_NAME"],
+            "DATE": source["DATE"],
+            "VENUE_ID": source["VENUE_ID"],
+        })]
+    )
+    return target.filter(
+        (col("EVENT_NAME") == event_name) &
+        (col("DATE") == str(event_date)) &
+        (col("VENUE_ID") == venue_id)
+    ).select("EVENT_ID").collect()[0][0]
 def save_poster(S, file_name, bands, event_date, venue, event_name, designer_name, md5_hash):
     venue_id = get_or_insert(S, "VENUES", "VENUE_NAME", venue)
     designer_id = get_or_insert(S, "DESIGNERS", "DESIGNER_NAME", designer_name)
     band_ids = [get_or_insert(S, "BANDS", "BAND_NAME", b) for b in bands]
-    S.create_dataframe([[event_name, str(event_date), venue_id]],
-                       schema=["event_name", "date", "venue_id"]) \
-     .write.save_as_table("EVENTS", mode="append", column_order="name")
-    event_id = S.table("EVENTS").filter(
-        (col("VENUE_ID") == venue_id) & (col("DATE") == str(event_date))
-    ).select("EVENT_ID").collect()[-1][0]
+    event_id = get_or_insert_event(S, event_name, event_date, venue_id)
     S.create_dataframe([[file_name, event_id, designer_id, md5_hash]], schema=["file_name", "event_id", "designer_id", "md5_hash"]) \
      .write.save_as_table("POSTERS", mode="append", column_order="name")
     if band_ids:
