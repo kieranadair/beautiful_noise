@@ -7,7 +7,7 @@ from io import BytesIO
 def _check_session(S):
     """Checks whether the cached resource is still valid — if it returns False"""
     try:
-        S.range(1).collect()
+        S.get_current_session()
         return True
     except:
         return False
