@@ -3,7 +3,7 @@ from pathlib import Path
 from io import BytesIO
 import streamlit as st
 from config import STAGE
-from db import get_session, get_all_posters, save_poster, upload_to_stage, log_processed
+from db import get_valid_session, get_all_posters, save_poster, upload_to_stage, log_processed
 from ai import run_extraction, is_valid_poster, parse_extraction
 from utils import normalise, fuzzy_match, infer_date, preprocess_image, pdf_to_image_bytes, get_poster_vars, prepare_review_defaults, prepare_save_data, check_duplicate_md5, check_semantic_duplicate
 UPLOAD_CSS = """<style>
@@ -29,7 +29,7 @@ with h_cols[0]:
 
 st.divider()
 
-S = get_session()
+S = get_valid_session()
 all_posters = get_all_posters(S)
 all_bands, all_venues, all_designers, date_min, date_max = get_poster_vars(all_posters)
 

@@ -9,6 +9,7 @@ div[data-testid="stVerticalBlock"] > div[data-testid="stVerticalBlockBorderWrapp
 span[data-baseweb="tag"] > span:first-child { max-width: none !important; overflow: visible !important; }
 </style>
 """
+@st.fragment
 @st.dialog(":material/visibility:", width="large")
 def show_poster(poster):
     left, right = st.columns([1, 1])
