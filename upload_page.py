@@ -3,13 +3,9 @@ from pathlib import Path
 from io import BytesIO
 import streamlit as st
 from config import STAGE
-from db import get_valid_session, get_all_posters, save_poster, upload_to_stage, log_processed
+from db import get_session, get_all_posters, save_poster, upload_to_stage, log_processed
 from ai import run_extraction, is_valid_poster, parse_extraction
 from utils import normalise, fuzzy_match, infer_date, preprocess_image, pdf_to_image_bytes, get_poster_vars, prepare_review_defaults, prepare_save_data, check_duplicate_md5, check_semantic_duplicate
-UPLOAD_CSS = """<style>
-span[data-baseweb="tag"] > span:first-child { max-width: none !important; overflow: visible !important; }
-</style>
-"""
 def reset_upload():
     for k in ("result", "saved"):
         ss.pop(k, None)
@@ -19,8 +15,6 @@ def reset_upload():
 ss = st.session_state
 if "upload_key" not in ss: ss["upload_key"] = 0
 
-st.markdown(UPLOAD_CSS, unsafe_allow_html=True)
-
 # CTA Section
 h_cols = st.columns(5)
 with h_cols[0]:
@@ -29,7 +23,7 @@ with h_cols[0]:
 
 st.divider()
 
-S = get_valid_session()
+S = get_session()
 all_posters = get_all_posters(S)
 all_bands, all_venues, all_designers, date_min, date_max = get_poster_vars(all_posters)
 
@@ -101,13 +95,13 @@ with right:
             st.write("Processing image...")
             if Path(img.name).suffix.lower() == ".pdf":
                 img = pdf_to_image_bytes(img)
-            ss["processed_img"] = preprocess_image(img, "JPEG")
+            ss["processed_img"] = preprocess_image(img)
             md5_hash = hashlib.md5(ss["processed_img"].getvalue(), usedforsecurity=False).hexdigest()
             if check_duplicate_md5(md5_hash, all_posters):
                 ss["upload_error"] = "This poster has already been uploaded."
                 ss["upload_key"] += 1
                 st.rerun()
-            target = upload_to_stage(S, ss["processed_img"], ".jpg")
+            target = upload_to_stage(S, ss["processed_img"])
 
             st.write("Analysing image...")
             result = run_extraction(S, target)

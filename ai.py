@@ -4,6 +4,8 @@ from io import BytesIO
 from snowflake.snowpark.functions import ai_complete, to_file, lit, col
 from config import STAGE, MODEL
 from snowflake.snowpark import Session
+
+
 PROMPT = """Look at this image and do two things:
 
 1. Determine whether this is a gig, concert, or music event poster. Set is_valid to true if it is, false if not.
@@ -15,6 +17,8 @@ PROMPT = """Look at this image and do two things:
    - event_name: specific festival or night name only; null if none
 
 If it is not a valid poster, return empty values for the remaining fields."""
+
+
 RESPONSE_FORMAT = {
     "type": "json",
     "schema": {
@@ -29,9 +33,13 @@ RESPONSE_FORMAT = {
         "required": ["is_valid", "bands", "date", "venue", "event_name"]
     }
 }
-#| export
+
+
 def run_extraction(S: Session, stage_filename: str) -> dict:
-    """Call AI_COMPLETE on a staged poster, log raw result to POSTERS_RAW, and return parsed dict."""
+    """Call AI_COMPLETE on a staged poster image, log raw result to POSTERS_RAW atomically,
+    and return parsed dict. The write-then-read pattern is intentional — ai_complete()
+    executes server-side, so the result is captured by writing to table first, then
+    reading back by file_name (UUID, guaranteed unique)."""
     S.range(1).select(
         lit(stage_filename).alias("FILE_NAME"),
         ai_complete(MODEL, PROMPT, to_file(f"@{STAGE}/{stage_filename}"),
@@ -40,13 +48,17 @@ def run_extraction(S: Session, stage_filename: str) -> dict:
     
     row = S.table("POSTERS_RAW").filter(col("FILE_NAME") == stage_filename).first()
     return json.loads(row["AI_COMPLETE"])
-#| export
+
+
 def is_valid_poster(result: dict) -> bool:
-    """Returns True if the AI determined the image is a valid gig/event poster."""
+    """Returns True if the AI determined the image is a valid gig/event poster.
+    Checks the is_valid field from the AI extraction result."""
     return bool(result.get("is_valid", False))
-#| export
+
+
 def parse_extraction(result: dict) -> tuple[list[str], str, str, str | None]:
-    """Unwrap raw AI result into (bands, date, venue, event_name) tuple with safe defaults."""
+    """Unwrap raw AI result into (bands, date, venue, event_name) tuple with safe defaults.
+    Returns empty list/string for missing fields, None for absent event_name."""
     return (
         result.get("bands", []),
         result.get("date", ""),
