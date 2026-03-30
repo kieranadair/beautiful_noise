@@ -58,7 +58,6 @@ def poster_grid(all_posters, all_bands, all_venues, all_designers, months):
                 with c.container():
                     st.image(o["URL"])
                     if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}"):
-                        st.query_params["poster"] = o["POSTER_ID"]
                         show_poster(o)
         st.space("small")
 
@@ -86,9 +85,9 @@ def show_poster(poster):
         st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
         st.write(f"**Venue:** {poster['VENUE_NAME']}")
         st.write(f"**Designer:** {poster['DESIGNER_NAME']}")
-        st.space(size="small")
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
-        st.code(f"beautifulnoise.streamlit.app/?poster={poster['POSTER_ID']}", language=None)
+        st.code(f"https://beautifulnoise.streamlit.app/?poster={poster['POSTER_ID']}", language=None, width="content")
+        st.space(size="small")
         if poster["UPLOAD_TYPE"] == "COMMUNITY":
             st.warning("This poster was uploaded by a community member for its historical and cultural value. If you are the rights holder and would like it removed, please contact us.", icon=":material/info:")
 
