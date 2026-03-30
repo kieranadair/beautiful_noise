@@ -86,9 +86,9 @@ def show_poster(poster):
         st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
         st.write(f"**Venue:** {poster['VENUE_NAME']}")
         st.write(f"**Designer:** {poster['DESIGNER_NAME']}")
-        st.caption("Share this poster via the link below:")
-        st.code(f"beautifulnoise.streamlit.app/?poster={poster['POSTER_ID']}", language=None)
+        st.space(size="small")
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
+        st.code(f"beautifulnoise.streamlit.app/?poster={poster['POSTER_ID']}", language=None)
         if poster["UPLOAD_TYPE"] == "COMMUNITY":
             st.warning("This poster was uploaded by a community member for its historical and cultural value. If you are the rights holder and would like it removed, please contact us.", icon=":material/info:")
 
