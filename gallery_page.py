@@ -3,6 +3,14 @@ from config import NAV_BTN_WIDTH
 from db import get_session, get_all_posters
 from utils import get_filtered_posters, get_poster_vars, month_range
 
+# ---------------------------------------------------------------------------
+# Navigation
+# ---------------------------------------------------------------------------
+
+if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
+    st.switch_page("upload_page.py")
+
+st.divider()
 
 # ---------------------------------------------------------------------------
 # Constants & session state
@@ -23,8 +31,8 @@ def poster_grid(all_posters, all_bands, all_venues, all_designers, months):
     month_fmt = lambda d: d.strftime("%b %Y")
     c1, c2, c3, c4 = st.columns(4)
     with c1: band_filter  = st.multiselect("Bands", options=all_bands)
-    with c2: venue_filter = st.multiselect("Venues", options=all_venues)
-    with c3: designer_filter = st.multiselect("Designers", options=all_designers)
+    with c2: designer_filter = st.multiselect("Designers", options=all_designers)
+    with c3: venue_filter = st.multiselect("Venues", options=all_venues)
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
 
     filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, designer_filter, month_range_filter)
@@ -82,23 +90,14 @@ def show_poster(poster):
         st.header(", ".join([b for b in poster["BANDS"]]))
         if poster["EVENT_NAME"]:
             st.subheader(poster["EVENT_NAME"])
+        st.write(f"**Designer:** {poster['DESIGNER_NAME']}")
         st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
         st.write(f"**Venue:** {poster['VENUE_NAME']}")
-        st.write(f"**Designer:** {poster['DESIGNER_NAME']}")
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
         st.code(f"https://beautifulnoise.streamlit.app/?poster={poster['POSTER_ID']}", language=None, width="content")
         st.space(size="small")
         if poster["UPLOAD_TYPE"] == "COMMUNITY":
             st.warning("This poster was uploaded by a community member for its historical and cultural value. If you are the rights holder and would like it removed, please contact us.", icon=":material/info:")
-
-# ---------------------------------------------------------------------------
-# Navigation
-# ---------------------------------------------------------------------------
-
-if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
-    st.switch_page("upload_page.py")
-
-st.divider()
 
 # ---------------------------------------------------------------------------
 # Data: poster cache, filter options, date range
@@ -116,6 +115,6 @@ months = month_range(date_min, date_max)
 
 primary = st.get_option("theme.primaryColor")
 secondary = st.get_option("theme.secondaryBackgroundColor")
-st.subheader(f'Browse :color[{len(all_posters)} posters]{{background={primary} foreground={secondary}}} by {len(all_designers)} artists for {len(all_bands)} bands at {len(all_venues)} venues')
+st.subheader(f'Browse :color[{len(all_posters)} posters]{{background={primary} foreground={secondary}}} for {len(all_bands)} bands by {len(all_designers)} designers at {len(all_venues)} venues')
 
 poster_grid(all_posters, all_bands, all_venues, all_designers, months)
