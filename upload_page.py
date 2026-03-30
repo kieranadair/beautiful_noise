@@ -75,14 +75,15 @@ with left:
         venue = st.selectbox("Venue", options=venue_options, index=venue_options.index(r["matched_venue"]) if r.get("matched_venue") in venue_options else None, accept_new_options=True, disabled=form_disabled)
         event_name = st.text_input("Event Name", value=r.get("normed_event_name", ""), placeholder="Leave empty if not a named event", disabled=form_disabled)
         designer_name = st.selectbox("Designer", options=sorted(set(all_designers + ["UNKNOWN"])), index=None, accept_new_options=True, disabled=form_disabled)
-        permission = st.checkbox("I have the right to share this poster and agree to the [Terms of Service](/terms_of_service)", disabled=form_disabled)
+        upload_type = st.radio("Upload type", options=["I created this poster or have the creator's permission to share it", "I'm sharing this for its historical value to the community — I don't hold the rights"], index=None, disabled=form_disabled)
+        st.caption("By uploading, you agree to the [Terms of Service](/terms_of_service)")
         submitted = st.form_submit_button("Save Poster", type="primary", disabled=form_disabled, icon=":material/check:")
 
     # --- Form validation (all errors shown at once) ---
     if submitted:
         errors = []
-        if not permission:
-            errors.append("Please confirm you have permission before saving.")
+        if not upload_type:
+            errors.append("Please select an upload type before saving.")
         if not bands or not venue:
             errors.append("Please ensure both the bands and venues are filled in.")
         if not designer_name:
@@ -98,7 +99,8 @@ with left:
             st.rerun()
         else:
             with st.spinner("Saving... Please don't close this page."):
-                save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], **prepare_save_data(bands, event_date, venue, event_name, designer_name))
+                upload_type_val = "RIGHTS_HOLDER" if upload_type.startswith("I created") else "COMMUNITY"
+                save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], upload_type=upload_type_val, **prepare_save_data(bands, event_date, venue, event_name, designer_name))
                 get_all_posters.clear()
                 ss["saved"] = True
                 st.rerun()
@@ -142,7 +144,7 @@ with right:
             target = upload_to_stage(S, ss["processed_img"])
 
             st.write("Analysing image...")
-            result = run_extraction(S, target)
+            result = run_extraction(S, target, venue_list=all_venues)
             if not is_valid_poster(result):
                 ss["upload_error"] = "That doesn't look like a gig poster — please try again."
                 ss["upload_key"] += 1

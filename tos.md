@@ -25,9 +25,12 @@ You retain all copyright and ownership of any content you upload to the Service.
 By uploading content, you grant Beautiful Noise a non-exclusive, royalty-free, worldwide licence to store, display, reproduce, and distribute your content as part of the archive. This licence exists solely for the purpose of operating and presenting the archive.
 
 #### Your responsibility
-By uploading a poster, you confirm that:
-- You are the creator of the work, **or** you have permission from the creator to share it, **or** you reasonably believe the upload is permitted (e.g. documenting a poster displayed in a public space)
-- The content does not infringe on any third party's rights
+By uploading a poster, you confirm that at least one of the following applies:
+- You are the creator of the work, **or** you have permission from the creator to share it
+- You are uploading the poster in good faith for its historical or cultural significance to Naarm's live music community, and you acknowledge that the original creator may request removal at any time
+
+In all cases, you also confirm that:
+- The content does not infringe on any third party's rights to the best of your knowledge
 - The content is a genuine gig poster or related promotional material from Naarm's live music scene
 
 #### What you must not upload

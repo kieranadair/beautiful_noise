@@ -29,6 +29,12 @@ def poster_grid(all_posters, all_bands, all_venues, all_designers, months):
 
     filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, designer_filter, month_range_filter)
 
+    poster_param = st.query_params.get("poster")
+    if poster_param:
+        match = next((p for p in all_posters if str(p["POSTER_ID"]) == poster_param), None)
+        if match:
+            show_poster(match)
+
     st.divider()
 
     # --- Empty state ---
@@ -50,7 +56,8 @@ def poster_grid(all_posters, all_bands, all_venues, all_designers, months):
                 o = visible_posters[idx]
                 with c.container():
                     st.image(o["URL"])
-                    if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['FILE_NAME']}"):
+                    if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}"):
+                        st.query_params["poster"] = o["POSTER_ID"]
                         show_poster(o)
         st.space("small")
 
@@ -72,22 +79,20 @@ def show_poster(poster):
     with left:
         st.image(poster["URL"])
     with right:
-        if poster["BANDS"]:
-            st.header(", ".join([b for b in poster["BANDS"]]))
+        st.header(", ".join([b for b in poster["BANDS"]]))
         if poster["EVENT_NAME"]:
             st.subheader(poster["EVENT_NAME"])
-        if poster["DATE"]:
-            st.markdown(f"**Date:** {poster['DATE']:%d/%m/%Y}")
-        if poster["VENUE_NAME"]:
-            st.markdown(f"**Venue:** {poster['VENUE_NAME']}")
-        if poster["DESIGNER_NAME"]:
-            st.markdown(f"**Designer:** {poster['DESIGNER_NAME']}")
+        st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
+        st.write(f"**Venue:** {poster['VENUE_NAME']}")
+        st.write(f"**Designer:** {poster['DESIGNER_NAME']}")
+        st.caption(f"Poster ID: {poster['POSTER_ID']}")
+        if poster["UPLOAD_TYPE"] == "COMMUNITY":
+            st.warning("This poster was uploaded by a community member for its historical and cultural value. If you are the rights holder and would like it removed, please contact us.", icon=":material/info:")
+        st.html(f"""<button onclick="navigator.clipboard.writeText(window.location.origin + '/?poster={poster['POSTER_ID']}')">Copy link</button>""")
 
 # ---------------------------------------------------------------------------
 # Navigation
 # ---------------------------------------------------------------------------
-
-S = get_session()
 
 if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
     st.switch_page("upload_page.py")
@@ -97,6 +102,8 @@ st.divider()
 # ---------------------------------------------------------------------------
 # Data: poster cache, filter options, date range
 # ---------------------------------------------------------------------------
+
+S = get_session()
 
 all_posters = get_all_posters(S)
 all_bands, all_venues, all_designers, date_min, date_max = get_poster_vars(all_posters)

@@ -6,17 +6,21 @@ from config import STAGE, MODEL
 from snowflake.snowpark import Session
 
 
-PROMPT = """Look at this image and do two things:
+PROMPT_BASE = """Look at this image and do two things:
 
 1. Determine whether this is a gig, concert, or music event poster. Set is_valid to true if it is, false if not.
 
 2. If it is a valid poster, extract:
    - bands: every band, artist, or performer including support acts and DJs
    - date: the event date in MM-DD format; do NOT provide year even if visible
-   - venue: venue name only
+   - venue: pick from this list if the venue matches: [{venues}]. If no match, return the venue name as written on the poster
    - event_name: specific festival or night name only; null if none
 
 If it is not a valid poster, return empty values for the remaining fields."""
+
+
+def _build_prompt(venue_list: list[str]) -> str:
+    return PROMPT_BASE.format(venues=", ".join(venue_list) if venue_list else "")
 
 
 RESPONSE_FORMAT = {
@@ -35,14 +39,15 @@ RESPONSE_FORMAT = {
 }
 
 
-def run_extraction(S: Session, stage_filename: str) -> dict:
+def run_extraction(S: Session, stage_filename: str, venue_list: list[str] | None = None) -> dict:
     """Call AI_COMPLETE on a staged poster image, log raw result to POSTERS_RAW atomically,
     and return parsed dict. The write-then-read pattern is intentional — ai_complete()
     executes server-side, so the result is captured by writing to table first, then
     reading back by file_name (UUID, guaranteed unique)."""
+    prompt = _build_prompt(venue_list or [])
     S.range(1).select(
         lit(stage_filename).alias("FILE_NAME"),
-        ai_complete(MODEL, PROMPT, to_file(f"@{STAGE}/{stage_filename}"),
+        ai_complete(MODEL, prompt, to_file(f"@{STAGE}/{stage_filename}"),
                     response_format=RESPONSE_FORMAT).alias("AI_COMPLETE")
     ).write.mode("append").save_as_table("POSTERS_RAW")
     

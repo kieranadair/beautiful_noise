@@ -73,7 +73,7 @@ def get_or_insert_event(S: Session, event_name: str | None, event_date, venue_id
     ).select("EVENT_ID").collect()[0][0]
 
 @with_retry
-def save_poster(S: Session, file_name: str, bands: list[str], event_date, venue: str, event_name: str | None, designer_name: str, md5_hash: str) -> None:
+def save_poster(S: Session, file_name: str, bands: list[str], event_date, venue: str, event_name: str | None, designer_name: str, md5_hash: str, upload_type: str) -> None:
     """Orchestrates the full poster save: upserts dimensions (venue, designer, bands),
     upserts the event, then appends to POSTERS and BANDS_EVENTS. Re-fetches the session
     from cache before the raw appends to pick up any reconnect from inner retries."""
@@ -82,7 +82,7 @@ def save_poster(S: Session, file_name: str, bands: list[str], event_date, venue:
     band_ids = [get_or_insert(S, "BANDS", "BAND_NAME", b) for b in bands]
     event_id = get_or_insert_event(S, event_name, event_date, venue_id)
     S = get_session()
-    S.create_dataframe([[file_name, event_id, designer_id, md5_hash]], schema=["file_name", "event_id", "designer_id", "md5_hash"]) \
+    S.create_dataframe([[file_name, event_id, designer_id, md5_hash, upload_type]], schema=["file_name", "event_id", "designer_id", "md5_hash", "upload_type"]) \
      .write.save_as_table("POSTERS", mode="append", column_order="name")
     if band_ids:
         S.create_dataframe([[event_id, bid] for bid in band_ids],
