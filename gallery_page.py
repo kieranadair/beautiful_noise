@@ -37,13 +37,6 @@ def poster_grid(all_posters, all_bands, all_venues, all_designers, months):
 
     filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, designer_filter, month_range_filter)
 
-    poster_param = st.query_params.get("poster")
-    if poster_param:
-        st.query_params.clear()
-        match = next((p for p in all_posters if str(p["POSTER_ID"]) == poster_param), None)
-        if match:
-            show_poster(match)
-
     st.divider()
 
     # --- Empty state ---
@@ -88,17 +81,14 @@ def show_poster(poster):
         st.image(poster["URL"])
     with right:
         st.header(", ".join([b for b in poster["BANDS"]]))
-        if poster["EVENT_NAME"]:
-            st.subheader(poster["EVENT_NAME"])
+        if poster["EVENT_NAME"]: st.subheader(poster["EVENT_NAME"])
         st.write(f"**Designer:** {poster['DESIGNER_NAME']}")
         st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
         st.write(f"**Venue:** {poster['VENUE_NAME']}")
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
-        st.code(f"https://beautifulnoise.streamlit.app/?poster={poster['POSTER_ID']}", language=None, width="content")
+        st.space(size="medium")
+        if poster["UPLOAD_TYPE"] == "COMMUNITY": st.warning("Community upload: if you are the rights holder and would like it corrected, attributed or removed please submit a request.", icon=":material/info:")
         st.page_link("contact_page.py", label="Submit a correction or request", icon=":material/edit:")
-        st.space(size="small")
-        if poster["UPLOAD_TYPE"] == "COMMUNITY":
-            st.warning("This poster was uploaded by a community member for its historical and cultural value. If you are the rights holder and would like it removed, please [submit a request](/contact).", icon=":material/info:")
 
 # ---------------------------------------------------------------------------
 # Data: poster cache, filter options, date range
