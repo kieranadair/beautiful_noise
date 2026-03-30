@@ -31,6 +31,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_designers, months):
 
     poster_param = st.query_params.get("poster")
     if poster_param:
+        st.query_params.clear()
         match = next((p for p in all_posters if str(p["POSTER_ID"]) == poster_param), None)
         if match:
             show_poster(match)
@@ -85,10 +86,11 @@ def show_poster(poster):
         st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
         st.write(f"**Venue:** {poster['VENUE_NAME']}")
         st.write(f"**Designer:** {poster['DESIGNER_NAME']}")
+        st.caption("Share this poster via the link below:")
+        st.code(f"beautifulnoise.streamlit.app/?poster={poster['POSTER_ID']}", language=None)
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
         if poster["UPLOAD_TYPE"] == "COMMUNITY":
             st.warning("This poster was uploaded by a community member for its historical and cultural value. If you are the rights holder and would like it removed, please contact us.", icon=":material/info:")
-        st.html(f"""<button onclick="navigator.clipboard.writeText(window.location.origin + '/?poster={poster['POSTER_ID']}')">Copy link</button>""")
 
 # ---------------------------------------------------------------------------
 # Navigation
