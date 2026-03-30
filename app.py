@@ -11,8 +11,9 @@ span[data-baseweb="tag"] > span:first-child { max-width: none !important; overfl
 # Set up naviation
 gallery = st.Page("gallery_page.py", title="Gallery")
 upload  = st.Page("upload_page.py",  title="Upload")
+contact = st.Page("contact_page.py", title="Contact")
 terms_of_service = st.Page("terms_of_service.py", title="Terms of Service")
-pg = st.navigation([gallery, upload, terms_of_service])
+pg = st.navigation([gallery, upload, contact, terms_of_service])
 
 # Logo
 primary = st.get_option("theme.primaryColor")
@@ -37,4 +38,4 @@ pg.run()
 
 # Footer setion
 st.space("small")
-st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use.")
+st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/contact).")

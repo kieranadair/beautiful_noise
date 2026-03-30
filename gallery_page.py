@@ -95,9 +95,10 @@ def show_poster(poster):
         st.write(f"**Venue:** {poster['VENUE_NAME']}")
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
         st.code(f"https://beautifulnoise.streamlit.app/?poster={poster['POSTER_ID']}", language=None, width="content")
+        st.page_link("contact_page.py", label="Submit a correction or request", icon=":material/edit:")
         st.space(size="small")
         if poster["UPLOAD_TYPE"] == "COMMUNITY":
-            st.warning("This poster was uploaded by a community member for its historical and cultural value. If you are the rights holder and would like it removed, please contact us.", icon=":material/info:")
+            st.warning("This poster was uploaded by a community member for its historical and cultural value. If you are the rights holder and would like it removed, please [submit a request](/contact).", icon=":material/info:")
 
 # ---------------------------------------------------------------------------
 # Data: poster cache, filter options, date range

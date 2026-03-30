@@ -7,6 +7,14 @@ from db import get_session, get_all_posters, save_poster, upload_to_stage, log_p
 from ai import run_extraction, is_valid_poster, parse_extraction
 from utils import normalise, fuzzy_match, infer_date, preprocess_image, pdf_to_image_bytes, get_poster_vars, prepare_review_defaults, prepare_save_data, check_duplicate_md5, check_semantic_duplicate
 
+# ---------------------------------------------------------------------------
+# Navigation
+# ---------------------------------------------------------------------------
+
+if st.button("VIEW GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
+    st.switch_page("gallery_page.py")
+
+st.divider()
 
 # ---------------------------------------------------------------------------
 # Helpers & session state
@@ -19,15 +27,6 @@ def reset_upload():
 
 ss = st.session_state
 if "upload_key" not in ss: ss["upload_key"] = 0
-
-# ---------------------------------------------------------------------------
-# Navigation
-# ---------------------------------------------------------------------------
-
-if st.button("VIEW GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
-    st.switch_page("gallery_page.py")
-
-st.divider()
 
 # ---------------------------------------------------------------------------
 # Data: session, poster cache, and filter options (needed for form dropdowns

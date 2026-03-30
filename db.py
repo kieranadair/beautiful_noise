@@ -119,3 +119,11 @@ def log_processed(S: Session, file_name: str, bands: list[str], date: str, venue
     ).with_column("bands", parse_json(col("bands"))) \
      .with_column("matched_bands", parse_json(col("matched_bands"))) \
      .write.save_as_table("POSTERS_PROCESSED", mode="append", column_order="name")
+
+@with_retry
+def save_request(S: Session, request_type: str, entity_type: str, scope: str, poster_ids: list[int] | None, current_value: str | None, requested_value: str | None, notes: str | None) -> None:
+    S.create_dataframe(
+        [[request_type, entity_type, scope, json.dumps(poster_ids) if poster_ids else None, current_value, requested_value, notes]],
+        schema=["request_type", "entity_type", "scope", "poster_ids", "current_value", "requested_value", "notes"]
+    ).with_column("poster_ids", parse_json(col("poster_ids"))) \
+     .write.save_as_table("REQUESTS", mode="append", column_order="name")
