@@ -59,13 +59,17 @@ def pdf_to_image_bytes(file: BytesIO) -> BytesIO:
         pix = doc[0].get_pixmap(dpi=150)
         return BytesIO(pix.tobytes(IMG_FORMAT))
 
-def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None = None, venue_filter: list[str] | None = None, designer_filter: list[str] | None = None, month_range: tuple | None = None) -> list[dict]:
-    """Filter cached poster list in Python by bands, venues, designers, and/or month range.
+def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None = None, venue_filter: list[str] | None = None, designer_filter: list[str] | None = None, month_range: tuple | None = None, headline_only: bool = False) -> list[dict]:
+    """Filter cached poster list in Python by bands, venues, designers, month range, and headliner flag.
+    When headline_only is True and bands are filtered, only matches bands that appear as headliners.
     All filtering is done client-side on the cached result, not in Snowflake."""
     posters = all_posters
     if band_filter:
         band_set = set(band_filter)
-        posters = [p for p in posters if any(b in band_set for b in p["BANDS"])]
+        if headline_only:
+            posters = [p for p in posters if any(b in band_set for b in p["HEADLINERS"])]
+        else:
+            posters = [p for p in posters if any(b in band_set for b in p["BANDS"])]
     if venue_filter:
         venue_set = set(venue_filter)
         posters = [p for p in posters if p["VENUE_NAME"] in venue_set]
@@ -86,11 +90,13 @@ def get_poster_vars(all_posters: list[dict]) -> tuple[list[str], list[str], list
     date_max = max(o["DATE"] for o in all_posters)
     return all_bands, all_venues, all_designers, date_min, date_max
 
-def prepare_review_defaults(bands: list[str], date_str: str, venue: str, event_name: str | None, all_bands: list[str], all_venues: list[str]) -> tuple[list[str], date, str | None, str | None]:
+def prepare_review_defaults(headliners: list[str], supports: list[str], date_str: str, venue: str, event_name: str | None, all_bands: list[str], all_venues: list[str]) -> tuple[list[str], list[str], date, str | None, str | None]:
     """Normalise, fuzzy-match, and infer date from raw AI extraction values.
-    Returns (matched_bands, inferred_date, matched_venue, normed_event_name)."""
-    normed_bands = [n for b in bands if (n := normalise(b))]
-    matched_bands = [fuzzy_match(b, all_bands, threshold=90) for b in normed_bands]
+    Returns (matched_headliners, matched_supports, inferred_date, matched_venue, normed_event_name)."""
+    normed_headliners = [n for b in headliners if (n := normalise(b))]
+    matched_headliners = [fuzzy_match(b, all_bands, threshold=90) for b in normed_headliners]
+    normed_supports = [n for b in supports if (n := normalise(b))]
+    matched_supports = [fuzzy_match(b, all_bands, threshold=90) for b in normed_supports]
 
     inferred_date = infer_date(date_str)
     
@@ -99,13 +105,17 @@ def prepare_review_defaults(bands: list[str], date_str: str, venue: str, event_n
     
     normed_event_name = normalise(event_name)
     
-    return matched_bands, inferred_date, matched_venue, normed_event_name
+    return matched_headliners, matched_supports, inferred_date, matched_venue, normed_event_name
 
-def prepare_save_data(bands: list[str], event_date, venue: str, event_name: str, designer_name: str) -> dict:
+def prepare_save_data(headliners: list[str], supports: list[str], event_date, venue: str, event_name: str, designer_name: str) -> dict:
     """Normalise raw form values into a clean dict ready for save_poster().
-    Applies normalise() to all text fields; passes event_date through as-is."""
+    Applies normalise() to all text fields; passes event_date through as-is.
+    bands is the merged headliners + supports list; headliners preserved for IS_HEADLINER flag."""
+    normed_headliners = [n for b in headliners if (n := normalise(b))]
+    normed_supports = [n for b in supports if (n := normalise(b))]
     return {
-        "bands": [n for b in bands if (n := normalise(b))],
+        "bands": normed_headliners + normed_supports,
+        "headliners": normed_headliners,
         "event_date": event_date,
         "venue": normalise(venue) or "",
         "event_name": normalise(event_name),

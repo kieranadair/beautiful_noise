@@ -38,4 +38,4 @@ pg.run()
 
 # Footer setion
 st.space("small")
-st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/contact).")
+st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/contact_page).")

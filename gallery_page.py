@@ -34,8 +34,9 @@ def poster_grid(all_posters, all_bands, all_venues, all_designers, months):
     with c2: designer_filter = st.multiselect("Designers", options=all_designers)
     with c3: venue_filter = st.multiselect("Venues", options=all_venues)
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
+    headline_only = st.toggle("Headline shows only", disabled=not band_filter) if band_filter else False
 
-    filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, designer_filter, month_range_filter)
+    filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, designer_filter, month_range_filter, headline_only)
 
     st.divider()
 
@@ -80,8 +81,14 @@ def show_poster(poster):
     with left:
         st.image(poster["URL"])
     with right:
-        st.header(", ".join([b for b in poster["BANDS"]]))
-        if poster["EVENT_NAME"]: st.subheader(poster["EVENT_NAME"])
+        if poster["EVENT_NAME"]:
+            st.header(poster["EVENT_NAME"])
+            st.subheader(", ".join(poster["BANDS"]))
+        elif poster["SUPPORTS"]:
+            st.header(", ".join(poster["HEADLINERS"]))
+            st.subheader(", ".join(poster["SUPPORTS"]))
+        else:
+            st.header(", ".join(poster["BANDS"]))
         st.write(f"**Designer:** {poster['DESIGNER_NAME']}")
         st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
         st.write(f"**Venue:** {poster['VENUE_NAME']}")

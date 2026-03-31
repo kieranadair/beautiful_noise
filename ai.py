@@ -11,7 +11,8 @@ PROMPT_BASE = """Look at this image and do two things:
 1. Determine whether this is a gig, concert, or music event poster. Set is_valid to true if it is, false if not.
 
 2. If it is a valid poster, extract:
-   - bands: every band, artist, or performer including support acts and DJs
+   - headliners: the headlining band(s) or artist(s) — typically displayed largest or at the top of the billing. If there is no clear hierarchy, put ALL bands/artists/performers here
+   - supports: support acts, openers, and DJs — typically displayed smaller or lower on the billing. Leave empty if there is no clear hierarchy
    - date: the event date in MM-DD format; do NOT provide year even if visible
    - venue: pick from this list if the venue matches: [{venues}]. If no match, return the venue name as written on the poster
    - event_name: specific festival or night name only; null if none
@@ -29,12 +30,13 @@ RESPONSE_FORMAT = {
         "type": "object",
         "properties": {
             "is_valid":   {"type": "boolean"},
-            "bands":      {"type": "array", "items": {"type": "string"}},
+            "headliners": {"type": "array", "items": {"type": "string"}},
+            "supports":   {"type": "array", "items": {"type": "string"}},
             "date":       {"type": "string"},
             "venue":      {"type": "string"},
             "event_name": {"type": ["string", "null"]}
         },
-        "required": ["is_valid", "bands", "date", "venue", "event_name"]
+        "required": ["is_valid", "headliners", "supports", "date", "venue", "event_name"]
     }
 }
 
@@ -61,11 +63,17 @@ def is_valid_poster(result: dict) -> bool:
     return bool(result.get("is_valid", False))
 
 
-def parse_extraction(result: dict) -> tuple[list[str], str, str, str | None]:
-    """Unwrap raw AI result into (bands, date, venue, event_name) tuple with safe defaults.
-    Returns empty list/string for missing fields, None for absent event_name."""
+def parse_extraction(result: dict) -> tuple[list[str], list[str], str, str, str | None]:
+    """Unwrap raw AI result into (headliners, supports, date, venue, event_name) tuple with safe defaults.
+    Returns empty list/string for missing fields, None for absent event_name.
+    If headliners is empty but supports has values, promotes all supports to headliners."""
+    headliners = result.get("headliners", [])
+    supports = result.get("supports", [])
+    if not headliners and supports:
+        headliners, supports = supports, []
     return (
-        result.get("bands", []),
+        headliners,
+        supports,
         result.get("date", ""),
         result.get("venue", ""),
         result.get("event_name")

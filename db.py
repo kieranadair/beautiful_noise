@@ -73,21 +73,28 @@ def get_or_insert_event(S: Session, event_name: str | None, event_date, venue_id
     ).select("EVENT_ID").collect()[0][0]
 
 @with_retry
-def save_poster(S: Session, file_name: str, bands: list[str], event_date, venue: str, event_name: str | None, designer_name: str, md5_hash: str, upload_type: str) -> None:
+def save_poster(S: Session, file_name: str, bands: list[str], headliners: list[str], event_date, venue: str, event_name: str | None, designer_name: str, md5_hash: str, upload_type: str) -> None:
     """Orchestrates the full poster save: upserts dimensions (venue, designer, bands),
-    upserts the event, then appends to POSTERS and BANDS_EVENTS. Re-fetches the session
-    from cache before the raw appends to pick up any reconnect from inner retries."""
+    upserts the event, then MERGEs into POSTERS (on file_name) and BANDS_EVENTS
+    (on event_id + band_id + is_headliner). All writes are idempotent — safe under @with_retry.
+    Re-fetches the session from cache before MERGEs to pick up any reconnect from inner retries.
+    headliners is the list of band names that are headliners — all others are supports."""
+    headliner_set = set(headliners)
     venue_id = get_or_insert(S, "VENUES", "VENUE_NAME", venue)
     designer_id = get_or_insert(S, "DESIGNERS", "DESIGNER_NAME", designer_name)
-    band_ids = [get_or_insert(S, "BANDS", "BAND_NAME", b) for b in bands]
+    band_ids = [(get_or_insert(S, "BANDS", "BAND_NAME", b), b in headliner_set) for b in bands]
     event_id = get_or_insert_event(S, event_name, event_date, venue_id)
     S = get_session()
-    S.create_dataframe([[file_name, event_id, designer_id, md5_hash, upload_type]], schema=["file_name", "event_id", "designer_id", "md5_hash", "upload_type"]) \
-     .write.save_as_table("POSTERS", mode="append", column_order="name")
+    poster_source = S.create_dataframe([[file_name, event_id, designer_id, md5_hash, upload_type]], schema=["FILE_NAME", "EVENT_ID", "DESIGNER_ID", "MD5_HASH", "UPLOAD_TYPE"])
+    poster_target = S.table("POSTERS")
+    poster_target.merge(poster_source, poster_target["FILE_NAME"] == poster_source["FILE_NAME"],
+                        [when_not_matched().insert({"FILE_NAME": poster_source["FILE_NAME"], "EVENT_ID": poster_source["EVENT_ID"], "DESIGNER_ID": poster_source["DESIGNER_ID"], "MD5_HASH": poster_source["MD5_HASH"], "UPLOAD_TYPE": poster_source["UPLOAD_TYPE"]})])
     if band_ids:
-        S.create_dataframe([[event_id, bid] for bid in band_ids],
-                           schema=["event_id", "band_id"]) \
-         .write.save_as_table("BANDS_EVENTS", mode="append", column_order="name")
+        be_target = S.table("BANDS_EVENTS")
+        for bid, is_hl in band_ids:
+            be_source = S.create_dataframe([[event_id, bid, is_hl]], schema=["EVENT_ID", "BAND_ID", "IS_HEADLINER"])
+            be_target.merge(be_source, (be_target["EVENT_ID"] == be_source["EVENT_ID"]) & (be_target["BAND_ID"] == be_source["BAND_ID"]),
+                            [when_not_matched().insert({"EVENT_ID": be_source["EVENT_ID"], "BAND_ID": be_source["BAND_ID"], "IS_HEADLINER": be_source["IS_HEADLINER"]})])
 
 @st.cache_data(show_spinner="Downloading poster data")
 @with_retry
@@ -98,7 +105,7 @@ def get_all_posters(_S: Session) -> list[dict]:
     intentional: cache on outside skips DB call when warm, retry on inside protects
     the actual Snowflake query on cache misses."""
     posters = _S.table("POSTER_GALLERY_V").with_column("URL", call_builtin("GET_PRESIGNED_URL", lit(f"@{STAGE}"), col("FILE_NAME"), 604800)).sort(col("UPLOADED_AT").desc()).collect()
-    poster_data = [{**o.as_dict(), "BANDS": json.loads(o["BANDS"])} for o in posters]
+    poster_data = [{**o.as_dict(), "BANDS": json.loads(o["BANDS"]), "HEADLINERS": json.loads(o["HEADLINERS"]), "SUPPORTS": json.loads(o["SUPPORTS"])} for o in posters]
     return poster_data
 
 @with_retry

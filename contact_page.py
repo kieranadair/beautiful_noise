@@ -1,3 +1,4 @@
+import json
 import streamlit as st
 from config import NAV_BTN_WIDTH
 from db import get_session, get_all_posters, save_request
@@ -32,6 +33,7 @@ REQUEST_TYPES = {
     "Authorise and/or provide designer attribution to a community upload": "ATTRIBUTION",
     "Request a poster takedown": "TAKEDOWN",
     "Correct a band, venue, designer or event name": "CORRECTION",
+    "Correct the headliner / support ordering": "HEADLINER_CORRECTION",
 }
 
 ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Designer": "DESIGNER", "Event name": "EVENT"}
@@ -56,6 +58,9 @@ def poster_picker(labels, key="default", help_text="Search by poster id, band, v
 st.subheader("Submit a request")
 st.write("Use this form to submit corrections, attribution requests, or takedown notices. All requests are reviewed by an admin before any changes are made.")
 
+if "request_submitted" in st.session_state:
+    st.success(st.session_state.pop("request_submitted"))
+
 poster_param = st.query_params.get("poster")
 default_index = None
 if poster_param:
@@ -73,7 +78,8 @@ if primary_poster:
         with img_col:
             st.image(primary_poster["URL"])
         with detail_col:
-            st.write(f"**Bands:** {', '.join(primary_poster['BANDS'])}")
+            st.write(f"**Headliners:** {', '.join(primary_poster['HEADLINERS'])}")
+            st.write(f"**Supports:** {', '.join(primary_poster['SUPPORTS']) if primary_poster['SUPPORTS'] else ''}")
             st.write(f"**Event:** {primary_poster['EVENT_NAME'] or ''}")
             st.write(f"**Venue:** {primary_poster['VENUE_NAME']}")
             st.write(f"**Date:** {primary_poster['DATE']:%d %B %Y}")
@@ -112,7 +118,7 @@ if primary_poster:
         if submit and not permission: st.error("You must be a rights holder to submit a takedown request.")
         elif submit:
             save_request(S, request_type="TAKEDOWN", entity_type="POSTER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
-            st.toast("Request submitted. It will be reviewed by an admin.")
+            st.session_state["request_submitted"] = "Takedown request submitted. It will be reviewed by an admin."
             st.query_params.clear()
             st.rerun()
 
@@ -154,7 +160,7 @@ if primary_poster:
         if submit and not permission: st.error("You must be a rights holder to submit an attribution request.")
         elif submit:
             save_request(S, request_type="ATTRIBUTION", entity_type="DESIGNER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=normalise(designer_name) if designer_name else None, notes=notes.strip() if notes and notes.strip() else None)
-            st.toast("Request submitted. It will be reviewed by an admin.")
+            st.session_state["request_submitted"] = "Attribution request submitted. It will be reviewed by an admin."
             st.query_params.clear()
             st.rerun()
 
@@ -188,7 +194,7 @@ if primary_poster:
             if submit and not corrected_value: st.error("Please enter a corrected value.")
             elif submit:
                 save_request(S, request_type="CORRECTION", entity_type="EVENT", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=normalise(current_value) if current_value else None, requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
-                st.toast("Request submitted. It will be reviewed by an admin.")
+                st.session_state["request_submitted"] = "Correction request submitted. It will be reviewed by an admin."
                 st.query_params.clear()
                 st.rerun()
 
@@ -251,6 +257,35 @@ if primary_poster:
                 elif submit and scope == "SPECIFIC" and not poster_ids: st.error("Please select at least one poster.")
                 elif submit:
                     save_request(S, request_type="CORRECTION", entity_type=entity_type, scope=scope, poster_ids=poster_ids, current_value=normalise(current_value), requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
-                    st.toast("Request submitted. It will be reviewed by an admin.")
+                    st.session_state["request_submitted"] = "Correction request submitted. It will be reviewed by an admin."
                     st.query_params.clear()
                     st.rerun()
+
+    # -------------------------------------------------------------------
+    # "HEADLINER_CORRECTION" flow
+    # -------------------------------------------------------------------
+
+    if request_type == "HEADLINER_CORRECTION":
+        st.info("Use this form to correct which bands are headliners and which are support acts on this poster.", icon=":material/info:")
+
+        poster_bands = sorted(primary_poster["BANDS"])
+        headliners = st.multiselect("Headliners", options=poster_bands, default=sorted(primary_poster["HEADLINERS"]), key="hl_headliners")
+        supports = st.multiselect("Support Acts", options=poster_bands, default=sorted(primary_poster["SUPPORTS"]), key="hl_supports")
+
+        notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="hl_notes")
+
+        submit = st.button("Submit request", type="primary", icon=":material/send:", key="hl_submit")
+
+        if submit:
+            overlap = set(headliners) & set(supports)
+            if overlap:
+                st.error(f"These bands appear in both lists: {', '.join(sorted(overlap))}. Please fix before submitting.")
+            elif not headliners and not supports:
+                st.error("Please assign at least one band.")
+            else:
+                requested = json.dumps({"headliners": sorted(headliners), "supports": sorted(supports)})
+                current = json.dumps({"headliners": sorted(primary_poster["HEADLINERS"]), "supports": sorted(primary_poster["SUPPORTS"])})
+                save_request(S, request_type="CORRECTION", entity_type="BILLING", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=current, requested_value=requested, notes=notes.strip() if notes and notes.strip() else None)
+                st.session_state["request_submitted"] = "Headliner correction submitted. It will be reviewed by an admin."
+                st.query_params.clear()
+                st.rerun()

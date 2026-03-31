@@ -62,14 +62,15 @@ with left:
     r = ss.get("result", {})
     form_disabled = not has_result or ss.get("saved", False)
 
-    band_options = sorted(set(all_bands + r.get("matched_bands", [])))
+    band_options = sorted(set(all_bands + r.get("matched_headliners", []) + r.get("matched_supports", [])))
     venue_options = sorted(set(all_venues + ([r["matched_venue"]] if r.get("matched_venue") else [])))
 
     with st.form(f"poster_details_{ss['upload_key']}"):
         st.subheader("Poster Details")
         if has_result and not ss.get("saved"):
             st.info("These details were extracted by AI — please review and edit before saving.")
-        bands = st.multiselect("Bands / Artists", options=band_options, default=r.get("matched_bands", []), accept_new_options=True, disabled=form_disabled)
+        headliners = st.multiselect("Headliners", options=band_options, default=r.get("matched_headliners", []), accept_new_options=True, disabled=form_disabled)
+        supports = st.multiselect("Support Acts", options=band_options, default=r.get("matched_supports", []), accept_new_options=True, disabled=form_disabled)
         event_date = st.date_input("Event Date", value=r.get("inferred_date"), format="DD/MM/YYYY", disabled=form_disabled)
         venue = st.selectbox("Venue", options=venue_options, index=venue_options.index(r["matched_venue"]) if r.get("matched_venue") in venue_options else None, accept_new_options=True, disabled=form_disabled)
         event_name = st.text_input("Event Name", value=r.get("normed_event_name", ""), placeholder="Leave empty if not a named event", disabled=form_disabled)
@@ -83,8 +84,10 @@ with left:
         errors = []
         if not upload_type:
             errors.append("Please select an upload type before saving.")
-        if not bands or not venue:
-            errors.append("Please ensure both the bands and venues are filled in.")
+        if not headliners and not supports:
+            errors.append("Please add at least one band or artist.")
+        if not venue:
+            errors.append("Please ensure the venue is filled in.")
         if not designer_name:
             errors.append("Please select or enter a designer. If unknown, choose 'UNKNOWN' from the list.")
         for e in errors:
@@ -92,14 +95,15 @@ with left:
 
     # --- Save: semantic duplicate check then persist ---
     if submitted and not errors:
-        if check_semantic_duplicate(bands, venue, event_date, all_posters):
+        all_bands_merged = headliners + supports
+        if check_semantic_duplicate(all_bands_merged, venue, event_date, all_posters):
             ss["upload_error"] = "A poster with these bands, venue, and date already exists."
             reset_upload()
             st.rerun()
         else:
             with st.spinner("Saving... Please don't close this page."):
                 upload_type_val = "RIGHTS_HOLDER" if upload_type.startswith("I created") else "COMMUNITY"
-                save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], upload_type=upload_type_val, **prepare_save_data(bands, event_date, venue, event_name, designer_name))
+                save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], upload_type=upload_type_val, **prepare_save_data(headliners, supports, event_date, venue, event_name, designer_name))
                 get_all_posters.clear()
                 ss["saved"] = True
                 st.rerun()
@@ -151,15 +155,16 @@ with right:
 
             # Fuzzy match + log post-processing audit trail
             st.write("Getting suggestions from database...")
-            bands, date_str, venue, event_name = parse_extraction(result)
-            matched_bands, inferred_date, matched_venue, normed_event_name = prepare_review_defaults(bands, date_str, venue, event_name, all_bands, all_venues)
-            log_processed(S, target, bands, date_str, venue, event_name, matched_bands, inferred_date, matched_venue, normed_event_name)
+            headliners_raw, supports_raw, date_str, venue, event_name = parse_extraction(result)
+            matched_headliners, matched_supports, inferred_date, matched_venue, normed_event_name = prepare_review_defaults(headliners_raw, supports_raw, date_str, venue, event_name, all_bands, all_venues)
+            log_processed(S, target, headliners_raw + supports_raw, date_str, venue, event_name, matched_headliners + matched_supports, inferred_date, matched_venue, normed_event_name)
 
             # Store result in session state to populate review form
             ss["result"] = {
                 "target": target,
                 "md5_hash": md5_hash,
-                "matched_bands": matched_bands,
+                "matched_headliners": matched_headliners,
+                "matched_supports": matched_supports,
                 "inferred_date": inferred_date,
                 "matched_venue": matched_venue,
                 "normed_event_name": normed_event_name,
