@@ -34,6 +34,7 @@ REQUEST_TYPES = {
     "Request a poster takedown": "TAKEDOWN",
     "Correct a band, venue, designer or event name": "CORRECTION",
     "Correct the headliner / support ordering": "HEADLINER_CORRECTION",
+    "Correct the date on a poster": "DATE_CORRECTION",
 }
 
 ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Designer": "DESIGNER", "Event name": "EVENT"}
@@ -289,3 +290,26 @@ if primary_poster:
                 st.session_state["request_submitted"] = "Headliner correction submitted. It will be reviewed by an admin."
                 st.query_params.clear()
                 st.rerun()
+
+    # -------------------------------------------------------------------
+    # "DATE_CORRECTION" flow
+    # -------------------------------------------------------------------
+
+    if request_type == "DATE_CORRECTION":
+        st.info("Use this form to correct the date on this poster.", icon=":material/info:")
+
+        current_date = primary_poster.get("DATE")
+        st.write(f"Current date: **{current_date:%d %B %Y}**" if current_date else "This poster has no date set.")
+
+        corrected_date = st.date_input("Correct date", value=current_date, format="DD/MM/YYYY")
+
+        notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="date_notes")
+
+        submit = st.button("Submit request", type="primary", icon=":material/send:", key="date_submit")
+
+        if submit and corrected_date == current_date: st.error("The corrected date is the same as the current date.")
+        elif submit:
+            save_request(S, request_type="CORRECTION", entity_type="DATE", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=str(current_date) if current_date else None, requested_value=str(corrected_date), notes=notes.strip() if notes and notes.strip() else None)
+            st.session_state["request_submitted"] = "Date correction submitted. It will be reviewed by an admin."
+            st.query_params.clear()
+            st.rerun()
