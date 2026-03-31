@@ -7,13 +7,10 @@ from utils import get_poster_vars, normalise, poster_has
 # Navigation (two buttons side by side)
 # ---------------------------------------------------------------------------
 
-nav_left, nav_right, _ = st.columns([NAV_BTN_WIDTH, NAV_BTN_WIDTH, 1], gap="small", vertical_alignment="center")
-with nav_left:
-    if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", use_container_width=True):
-        st.switch_page("upload_page.py")
-with nav_right:
-    if st.button("VIEW GALLERY", icon=":material/chevron_backward:", use_container_width=True):
-        st.switch_page("gallery_page.py")
+if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
+    st.switch_page("upload_page.py")
+if st.button("VIEW GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
+    st.switch_page("gallery_page.py")
 
 st.divider()
 
@@ -62,12 +59,10 @@ st.write("Use this form to submit corrections, attribution requests, or takedown
 poster_param = st.query_params.get("poster")
 default_index = None
 if poster_param:
-    label_list = list(poster_labels.keys())
-    for i, label in enumerate(label_list):
+    for i, label in enumerate(poster_labels):
         if label.startswith(f"{poster_param} —"):
             default_index = i
             break
-    st.query_params.clear()
 
 primary_label = st.selectbox("Which poster is this about?", options=poster_labels.keys(), index=default_index, help="Search by poster id, band, venue and date")
 primary_poster = poster_labels.get(primary_label)
@@ -118,6 +113,7 @@ if primary_poster:
         elif submit:
             save_request(S, request_type="TAKEDOWN", entity_type="POSTER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
             st.toast("Request submitted. It will be reviewed by an admin.")
+            st.query_params.clear()
             st.rerun()
 
     # -------------------------------------------------------------------
@@ -159,6 +155,7 @@ if primary_poster:
         elif submit:
             save_request(S, request_type="ATTRIBUTION", entity_type="DESIGNER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=normalise(designer_name) if designer_name else None, notes=notes.strip() if notes and notes.strip() else None)
             st.toast("Request submitted. It will be reviewed by an admin.")
+            st.query_params.clear()
             st.rerun()
 
     # -------------------------------------------------------------------
@@ -192,6 +189,7 @@ if primary_poster:
             elif submit:
                 save_request(S, request_type="CORRECTION", entity_type="EVENT", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=normalise(current_value) if current_value else None, requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
                 st.toast("Request submitted. It will be reviewed by an admin.")
+                st.query_params.clear()
                 st.rerun()
 
         else:
@@ -210,7 +208,7 @@ if primary_poster:
 
                     scope_options = ["Only change this poster", f"Select additional posters that mention {current_value}", f"Change all posters that mention {current_value}"]
                     if entity_type == "DESIGNER" and current_value == "UNKNOWN":
-                        scope_options = ["Only change this poster", f"Select additional posters that mention {current_value}"]
+                        scope_options = ["Only change this poster", "Select additional posters to update"]
                     scope_label = st.radio("How should this be applied?", options=scope_options)
 
                     if len(scope_options) > 2 and scope_label == scope_options[2]:
@@ -254,4 +252,5 @@ if primary_poster:
                 elif submit:
                     save_request(S, request_type="CORRECTION", entity_type=entity_type, scope=scope, poster_ids=poster_ids, current_value=normalise(current_value), requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
                     st.toast("Request submitted. It will be reviewed by an admin.")
+                    st.query_params.clear()
                     st.rerun()
