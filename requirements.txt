@@ -3,3 +3,4 @@ snowflake-snowpark-python
 rapidfuzz
 Pillow
 PyMuPDF
+pillow-heif

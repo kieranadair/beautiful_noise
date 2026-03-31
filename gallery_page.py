@@ -81,14 +81,11 @@ def show_poster(poster):
     with left:
         st.image(poster["URL"])
     with right:
-        if poster["EVENT_NAME"]:
-            st.header(poster["EVENT_NAME"])
-            st.subheader(", ".join(poster["BANDS"]))
-        elif poster["SUPPORTS"]:
-            st.header(", ".join(poster["HEADLINERS"]))
-            st.subheader(", ".join(poster["SUPPORTS"]))
-        else:
-            st.header(", ".join(poster["BANDS"]))
+        headliners = poster["HEADLINERS"] if poster["HEADLINERS"] else poster["BANDS"]
+        supports = poster["SUPPORTS"] if poster["HEADLINERS"] else []
+        st.header(", ".join(headliners))
+        if supports: st.subheader(", ".join(supports))
+        if poster["EVENT_NAME"]: st.subheader(poster["EVENT_NAME"])
         st.write(f"**Designer:** {poster['DESIGNER_NAME']}")
         st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
         st.write(f"**Venue:** {poster['VENUE_NAME']}")

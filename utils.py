@@ -59,6 +59,18 @@ def pdf_to_image_bytes(file: BytesIO) -> BytesIO:
         pix = doc[0].get_pixmap(dpi=150)
         return BytesIO(pix.tobytes(IMG_FORMAT))
 
+def heic_to_image_bytes(file: BytesIO) -> BytesIO:
+    """Convert a HEIC/HEIF file to RGB JPEG bytes. Returns a BytesIO for preprocess_image()."""
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+    img = Image.open(file)
+    if img.mode != "RGB":
+        img = img.convert("RGB")
+    buf = BytesIO()
+    img.save(buf, format=IMG_FORMAT)
+    buf.seek(0)
+    return buf
+
 def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None = None, venue_filter: list[str] | None = None, designer_filter: list[str] | None = None, month_range: tuple | None = None, headline_only: bool = False) -> list[dict]:
     """Filter cached poster list in Python by bands, venues, designers, month range, and headliner flag.
     When headline_only is True and bands are filtered, only matches bands that appear as headliners.

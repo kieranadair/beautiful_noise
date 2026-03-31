@@ -5,7 +5,7 @@ import streamlit as st
 from config import STAGE, NAV_BTN_WIDTH
 from db import get_session, get_all_posters, save_poster, upload_to_stage, log_processed
 from ai import run_extraction, is_valid_poster, parse_extraction
-from utils import normalise, fuzzy_match, infer_date, preprocess_image, pdf_to_image_bytes, get_poster_vars, prepare_review_defaults, prepare_save_data, check_duplicate_md5, check_semantic_duplicate
+from utils import normalise, fuzzy_match, infer_date, preprocess_image, pdf_to_image_bytes, heic_to_image_bytes, get_poster_vars, prepare_review_defaults, prepare_save_data, check_duplicate_md5, check_semantic_duplicate
 
 # ---------------------------------------------------------------------------
 # Navigation
@@ -52,7 +52,7 @@ left, right = st.columns(2, gap="large")
 with left:
 
     # --- File uploader ---
-    img = st.file_uploader("Upload a gig poster", type=["jpg", "jpeg", "png", "webp", "pdf"], key=f"uploader_{ss['upload_key']}", label_visibility="collapsed", disabled="result" in ss)
+    img = st.file_uploader("Upload a gig poster", type=["jpg", "jpeg", "png", "webp", "pdf", "heic", "heif"], key=f"uploader_{ss['upload_key']}", label_visibility="collapsed", disabled="result" in ss)
 
     if "upload_error" in ss:
         st.error(ss.pop("upload_error"))
@@ -86,6 +86,8 @@ with left:
             errors.append("Please select an upload type before saving.")
         if not headliners and not supports:
             errors.append("Please add at least one band or artist.")
+        elif not headliners:
+            errors.append("At least one band must be a headliner.")
         if not venue:
             errors.append("Please ensure the venue is filled in.")
         if not designer_name:
@@ -132,8 +134,11 @@ with right:
 
             # Preprocess: PDF conversion, resize, compress
             st.write("Processing image...")
-            if Path(img.name).suffix.lower() == ".pdf":
+            suffix = Path(img.name).suffix.lower()
+            if suffix == ".pdf":
                 img = pdf_to_image_bytes(img)
+            elif suffix in (".heic", ".heif"):
+                img = heic_to_image_bytes(img)
             ss["processed_img"] = preprocess_image(img)
 
             # MD5 duplicate check (before uploading to stage)

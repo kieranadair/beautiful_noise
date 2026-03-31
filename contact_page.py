@@ -280,8 +280,8 @@ if primary_poster:
             overlap = set(headliners) & set(supports)
             if overlap:
                 st.error(f"These bands appear in both lists: {', '.join(sorted(overlap))}. Please fix before submitting.")
-            elif not headliners and not supports:
-                st.error("Please assign at least one band.")
+            elif not headliners:
+                st.error("At least one band must be a headliner.")
             else:
                 requested = json.dumps({"headliners": sorted(headliners), "supports": sorted(supports)})
                 current = json.dumps({"headliners": sorted(primary_poster["HEADLINERS"]), "supports": sorted(primary_poster["SUPPORTS"])})
