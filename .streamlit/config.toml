@@ -10,7 +10,7 @@ base = "light"
 
 # ── Colours ───────────────────────────────────────────────────────────────
 primaryColor = "#0032e8"
-backgroundColor = "#e5e5e5"
+backgroundColor = "#f2f2f2"
 secondaryBackgroundColor = "#ffffff"
 textColor = "#121212"
 linkColor = "#757575"
