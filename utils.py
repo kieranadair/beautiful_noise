@@ -138,3 +138,8 @@ def month_range(start: date, end: date) -> list[date]:
         if d.month == 12: d = date(d.year + 1, 1, 1)
         else: d = date(d.year, d.month + 1, 1)
     return months
+
+def poster_has(p: dict, entity_type: str, value: str) -> bool:
+    """Check if a poster matches an entity value by type. Works with cached poster dicts."""
+    if entity_type == "BAND": return value in p["BANDS"]
+    return p[{"VENUE": "VENUE_NAME", "DESIGNER": "DESIGNER_NAME"}[entity_type]] == value
