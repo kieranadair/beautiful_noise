@@ -1,6 +1,9 @@
 # Workspace AI context
 AGENTS.md
 
+# Admin app (deployed as Streamlit in Snowflake, not part of public app)
+admin.py
+
 # Streamlit secrets
 .streamlit/secrets.toml
 

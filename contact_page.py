@@ -41,10 +41,10 @@ ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Designer": "DESIGNER", "Event
 
 GRID_COLUMNS = 5
 
-def poster_picker(labels, key="default", help_text="Search by poster id, band, venue and date"):
+def poster_picker(labels, key="default", help_text="Search by poster id, band, venue and date", pinned=None):
     selected = st.multiselect("Which poster(s)?", options=labels, help=help_text, key=f"picker_{key}")
-    if selected:
-        preview = [labels[s] for s in selected]
+    preview = (pinned or []) + [labels[s] for s in selected]
+    if preview:
         cols = st.columns(GRID_COLUMNS, gap="large")
         for i, p in enumerate(preview):
             with cols[i % GRID_COLUMNS]:
@@ -63,18 +63,19 @@ primary_label = st.selectbox("Which poster is this about?", options=poster_label
 primary_poster = poster_labels.get(primary_label)
 
 if primary_poster:
-    img_col, detail_col, *_ = st.columns(GRID_COLUMNS, gap="large")
-    with img_col:
-        st.image(primary_poster["URL"])
-    with detail_col:
-        st.write(f"**Bands:** {', '.join(primary_poster['BANDS'])}")
-        st.write(f"**Event:** {primary_poster['EVENT_NAME'] or ''}")
-        st.write(f"**Venue:** {primary_poster['VENUE_NAME']}")
-        st.write(f"**Date:** {primary_poster['DATE']:%d %B %Y}")
-        st.write(f"**Designer:** {primary_poster['DESIGNER_NAME']}")
-        if primary_poster["UPLOAD_TYPE"] == "COMMUNITY":
-            st.write("**Community upload**")
-        st.caption(f"ID: {primary_poster['POSTER_ID']}")
+    with st.container(border=True):
+        img_col, detail_col, *_ = st.columns(GRID_COLUMNS, gap="large")
+        with img_col:
+            st.image(primary_poster["URL"])
+        with detail_col:
+            st.write(f"**Bands:** {', '.join(primary_poster['BANDS'])}")
+            st.write(f"**Event:** {primary_poster['EVENT_NAME'] or ''}")
+            st.write(f"**Venue:** {primary_poster['VENUE_NAME']}")
+            st.write(f"**Date:** {primary_poster['DATE']:%d %B %Y}")
+            st.write(f"**Designer:** {primary_poster['DESIGNER_NAME']}")
+            if primary_poster["UPLOAD_TYPE"] == "COMMUNITY":
+                st.warning("Community upload")
+            st.caption(f"ID: {primary_poster['POSTER_ID']}")
 
     # -------------------------------------------------------------------
     # Step 2: Select an action
@@ -89,11 +90,11 @@ if primary_poster:
 
     if request_type == "TAKEDOWN":
 
-        st.info("This will permanently remove the selected poster(s) from the archive. If you'd prefer to keep them listed with proper credit, consider submitting an attribution request instead.")
+        st.info("This will permanently remove the selected poster(s) from the archive. If you'd prefer to keep them listed with proper credit, consider submitting an attribution request instead.", icon=":material/info:")
 
         additional_labels = {l: p for l, p in poster_labels.items() if l != primary_label}
         add_more = st.checkbox("Add additional posters to this request", key="takedown_more")
-        extra_selected = poster_picker(additional_labels, key="takedown") if add_more else []
+        extra_selected = poster_picker(additional_labels, key="takedown", pinned=[primary_poster]) if add_more else []
 
         all_ids = [primary_poster["POSTER_ID"]] + [poster_labels[s]["POSTER_ID"] for s in extra_selected]
 
@@ -115,11 +116,11 @@ if primary_poster:
 
     if request_type == "ATTRIBUTION":
 
-        st.info("Community members may upload posters they believe have cultural value to the archive, though these may sometimes miss details like the correct designer attribution. If you are a rights holder to a poster, use this form to authorise us to remove the community upload flag and correct the designer attribution if needed.")
+        st.info("Community members may upload posters they believe have cultural value to the archive, though these may sometimes miss details like the correct designer attribution. If you are a rights holder to a poster, use this form to authorise us to remove the community upload flag and correct the designer attribution if needed.", icon=":material/info:")
 
         additional_labels = {l: p for l, p in poster_labels.items() if l != primary_label and p["UPLOAD_TYPE"] == "COMMUNITY"}
         add_more = st.checkbox("Add additional posters to this request", key="attribution_more")
-        extra_selected = poster_picker(additional_labels, key="attribution") if add_more else []
+        extra_selected = poster_picker(additional_labels, key="attribution", pinned=[primary_poster]) if add_more else []
 
         all_selected = [primary_poster] + [poster_labels[s] for s in extra_selected]
         all_ids = [p["POSTER_ID"] for p in all_selected]
@@ -154,7 +155,7 @@ if primary_poster:
     # -------------------------------------------------------------------
 
     if request_type == "CORRECTION":
-        st.info("Use this form to correct a misspelled or incorrect band, venue, designer, or event name. You can apply the correction to all posters or just specific ones.")
+        st.info("Use this form to correct a misspelled or incorrect band, venue, designer, or event name. You can apply the correction to all posters or just specific ones.", icon=":material/info:")
 
         poster_bands = sorted(primary_poster["BANDS"])
         poster_venue = [primary_poster["VENUE_NAME"]]
@@ -183,18 +184,26 @@ if primary_poster:
                 st.rerun()
 
         else:
-            current_value = st.selectbox(f"Which {entity_label.lower()}?", options=scoped_options, index=None)
+            if entity_type == "BAND":
+                current_value = st.selectbox(f"Which {entity_label.lower()}?", options=scoped_options, index=None)
+            else:
+                current_value = scoped_options[0] if scoped_options else None
+                st.write(f"**{entity_label}:** {current_value}")
 
             if current_value:
                 additional_count = sum(1 for p in all_posters if poster_has(p, entity_type, current_value)) - 1
-                if additional_count > 0:
-                    st.info(f"There {'is' if additional_count == 1 else 'are'} {additional_count} additional poster{'s' if additional_count != 1 else ''} with this {entity_label.lower()} in the archive.")
-                else:
-                    st.info(f"No other posters have this {entity_label.lower()}.")
+                if not (entity_type == "DESIGNER" and current_value == "UNKNOWN"):
+                    if additional_count > 0:
+                        st.info(f"There {'is' if additional_count == 1 else 'are'} {additional_count} additional poster{'s' if additional_count != 1 else ''} with **{current_value}** in the archive.")
+                    else:
+                        st.info(f"No other posters have **{current_value}**.")
 
-                scope_label = st.radio("How should this be applied?", options=["Only change this poster", "Change all posters", "Change specific posters"])
+                scope_options = ["Only change this poster", f"Select additional posters that mention {current_value}", f"Change all posters that mention {current_value}"]
+                if entity_type == "DESIGNER" and current_value == "UNKNOWN":
+                    scope_options = ["Only change this poster", f"Select additional posters that mention {current_value}"]
+                scope_label = st.radio("How should this be applied?", options=scope_options)
 
-                if scope_label == "Change all posters":
+                if scope_label == scope_options[2]:
                     matching_labels = {l: p for l, p in poster_labels.items() if poster_has(p, entity_type, current_value)}
                     if matching_labels:
                         preview = list(matching_labels.values())
@@ -205,20 +214,20 @@ if primary_poster:
                                 st.caption(f"ID: {p['POSTER_ID']}")
 
                 selected_posters = []
-                if scope_label == "Change specific posters":
+                if scope_label == scope_options[1]:
                     relevant_labels = {l: p for l, p in poster_labels.items() if poster_has(p, entity_type, current_value) and l != primary_label}
-                    selected_posters = poster_picker(relevant_labels, key="correction")
+                    selected_posters = poster_picker(relevant_labels, key="correction", pinned=[primary_poster])
 
-                corrected_value = st.selectbox("What should it be changed to?", options=[o for o in full_options if o != current_value], index=None, accept_new_options=True, placeholder="Select existing or type a new name")
+                corrected_value = st.selectbox(f"What should **{current_value}** be changed to?", options=[o for o in full_options if o != current_value], index=None, accept_new_options=True, placeholder="Select existing or type a new name")
 
                 notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="correction_notes")
 
                 submit = st.button("Submit request", type="primary", icon=":material/send:", key="correction_submit")
 
-                if scope_label == "Only change this poster":
+                if scope_label == scope_options[0]:
                     scope = "SPECIFIC"
                     poster_ids = [primary_poster["POSTER_ID"]]
-                elif scope_label == "Change all posters":
+                elif scope_label == scope_options[2]:
                     scope = "GLOBAL"
                     poster_ids = None
                 else:
