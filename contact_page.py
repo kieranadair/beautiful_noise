@@ -34,10 +34,10 @@ poster_labels = {f"{p['POSTER_ID']} — {', '.join(p['BANDS'][:2])} — {p['VENU
 REQUEST_TYPES = {
     "Authorise and/or provide designer attribution to a community upload": "ATTRIBUTION",
     "Request a poster takedown": "TAKEDOWN",
-    "Correct a band, venue or designer's name": "CORRECTION",
+    "Correct a band, venue, designer or event name": "CORRECTION",
 }
 
-ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Designer": "DESIGNER"}
+ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Designer": "DESIGNER", "Event name": "EVENT"}
 
 GRID_COLUMNS = 5
 
@@ -53,110 +53,181 @@ def poster_picker(labels, key="default", help_text="Search by poster id, band, v
     return selected
 
 # ---------------------------------------------------------------------------
-# Page heading
+# Step 1: Select a poster
 # ---------------------------------------------------------------------------
 
 st.subheader("Submit a request")
 st.write("Use this form to submit corrections, attribution requests, or takedown notices. All requests are reviewed by an admin before any changes are made.")
 
-request_label = st.radio("What would you like to do?", options=REQUEST_TYPES.keys(), index=None)
-request_type = REQUEST_TYPES.get(request_label)
+primary_label = st.selectbox("Which poster is this about?", options=poster_labels.keys(), index=None, help="Search by poster id, band, venue and date")
+primary_poster = poster_labels.get(primary_label)
 
-# ---------------------------------------------------------------------------
-# "TAKEDOWN" flow
-# ---------------------------------------------------------------------------
+if primary_poster:
+    img_col, detail_col, *_ = st.columns(GRID_COLUMNS, gap="large")
+    with img_col:
+        st.image(primary_poster["URL"])
+    with detail_col:
+        st.write(f"**Bands:** {', '.join(primary_poster['BANDS'])}")
+        st.write(f"**Event:** {primary_poster['EVENT_NAME'] or ''}")
+        st.write(f"**Venue:** {primary_poster['VENUE_NAME']}")
+        st.write(f"**Date:** {primary_poster['DATE']:%d %B %Y}")
+        st.write(f"**Designer:** {primary_poster['DESIGNER_NAME']}")
+        if primary_poster["UPLOAD_TYPE"] == "COMMUNITY":
+            st.write("**Community upload**")
+        st.caption(f"ID: {primary_poster['POSTER_ID']}")
 
-if request_type == "TAKEDOWN":
+    # -------------------------------------------------------------------
+    # Step 2: Select an action
+    # -------------------------------------------------------------------
 
-    st.info("This will permanently remove the selected poster(s) from the archive. If you'd prefer to keep them listed with proper credit, consider submitting an attribution request instead.")
+    request_label = st.radio("What would you like to do?", options=REQUEST_TYPES.keys(), index=None)
+    request_type = REQUEST_TYPES.get(request_label)
 
-    selected_posters = poster_picker(poster_labels, key="takedown")
+    # -------------------------------------------------------------------
+    # "TAKEDOWN" flow
+    # -------------------------------------------------------------------
 
-    permission = st.checkbox("I am the rights holder of these posters", disabled=not selected_posters)
+    if request_type == "TAKEDOWN":
 
-    notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help")
+        st.info("This will permanently remove the selected poster(s) from the archive. If you'd prefer to keep them listed with proper credit, consider submitting an attribution request instead.")
 
-    submit = st.button("Submit request", type="primary", icon=":material/send:")
+        additional_labels = {l: p for l, p in poster_labels.items() if l != primary_label}
+        add_more = st.checkbox("Add additional posters to this request", key="takedown_more")
+        extra_selected = poster_picker(additional_labels, key="takedown") if add_more else []
 
-    if submit and not selected_posters: st.error("Please select at least one poster.")
-    elif submit and not permission: st.error("You must be a rights holder to submit a takedown request.")
-    elif submit:
-        save_request(S, request_type="TAKEDOWN", entity_type="POSTER", scope="SPECIFIC", poster_ids=[poster_labels[s]["POSTER_ID"] for s in selected_posters], current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
-        st.success("Request submitted. It will be reviewed by an admin.")
+        all_ids = [primary_poster["POSTER_ID"]] + [poster_labels[s]["POSTER_ID"] for s in extra_selected]
 
-# ---------------------------------------------------------------------------
-# "ATTRIBUTION" flow
-# ---------------------------------------------------------------------------
+        permission = st.checkbox("I am the rights holder of these posters")
 
-if request_type == "ATTRIBUTION":
+        notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="takedown_notes")
 
-    st.info("Community members may upload posters they believe have cultural value to the archive, though these may sometimes miss details like the correct designer attribution. If you are a rights holder to a poster, use this form to authorise us to remove the community upload flag and correct the designer attribution if needed.")
+        submit = st.button("Submit request", type="primary", icon=":material/send:", key="takedown_submit")
 
-    community_labels = {l: p for l, p in poster_labels.items() if p["UPLOAD_TYPE"] == "COMMUNITY"}
+        if submit and not permission: st.error("You must be a rights holder to submit a takedown request.")
+        elif submit:
+            save_request(S, request_type="TAKEDOWN", entity_type="POSTER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
+            st.toast("Request submitted. It will be reviewed by an admin.")
+            st.rerun()
 
-    selected_posters = poster_picker(community_labels, key="attribution")
+    # -------------------------------------------------------------------
+    # "ATTRIBUTION" flow
+    # -------------------------------------------------------------------
 
-    if selected_posters:
-        selected_data = [community_labels[s] for s in selected_posters]
-        designers = [p["DESIGNER_NAME"] for p in selected_data]
+    if request_type == "ATTRIBUTION":
+
+        st.info("Community members may upload posters they believe have cultural value to the archive, though these may sometimes miss details like the correct designer attribution. If you are a rights holder to a poster, use this form to authorise us to remove the community upload flag and correct the designer attribution if needed.")
+
+        additional_labels = {l: p for l, p in poster_labels.items() if l != primary_label and p["UPLOAD_TYPE"] == "COMMUNITY"}
+        add_more = st.checkbox("Add additional posters to this request", key="attribution_more")
+        extra_selected = poster_picker(additional_labels, key="attribution") if add_more else []
+
+        all_selected = [primary_poster] + [poster_labels[s] for s in extra_selected]
+        all_ids = [p["POSTER_ID"] for p in all_selected]
+
+        designers = [p["DESIGNER_NAME"] for p in all_selected]
         unknown_count = designers.count("UNKNOWN")
         named_designers = sorted(set(d for d in designers if d != "UNKNOWN"))
 
-        if unknown_count == len(selected_data):
+        if unknown_count == len(all_selected):
             st.warning(f"All {unknown_count} selected poster(s) are attributed to an UNKNOWN designer.")
         elif unknown_count:
-            st.warning(f"{unknown_count} of {len(selected_data)} selected poster(s) are attributed to an UNKNOWN designer. The rest are attributed to: {', '.join(named_designers)}.")
+            st.warning(f"{unknown_count} of {len(all_selected)} selected poster(s) are attributed to an UNKNOWN designer. The rest are attributed to: {', '.join(named_designers)}.")
         else:
             st.info(f"Selected poster(s) are attributed to: {', '.join(named_designers)}.")
 
-    designer_name = st.selectbox("Correct designer name (optional)", options=all_designers, index=None, accept_new_options=True, disabled=not selected_posters, placeholder="Select existing or type a new name")
+        designer_name = st.selectbox("Correct designer name (optional)", options=all_designers, index=None, accept_new_options=True, placeholder="Select existing or type a new name")
 
-    permission = st.checkbox("I am the rights holder of these posters", disabled=not selected_posters)
+        permission = st.checkbox("I am the rights holder of these posters")
 
-    notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help")
+        notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="attribution_notes")
 
-    submit = st.button("Submit request", type="primary", icon=":material/send:")
+        submit = st.button("Submit request", type="primary", icon=":material/send:", key="attribution_submit")
 
-    if submit and not selected_posters: st.error("Please select at least one poster.")
-    elif submit and not permission: st.error("You must be a rights holder to submit an attribution request.")
-    elif submit:
-        save_request(S, request_type="ATTRIBUTION", entity_type="DESIGNER", scope="SPECIFIC", poster_ids=[community_labels[s]["POSTER_ID"] for s in selected_posters], current_value=None, requested_value=normalise(designer_name) if designer_name else None, notes=notes.strip() if notes and notes.strip() else None)
-        st.success("Request submitted. It will be reviewed by an admin.")
-
-# ---------------------------------------------------------------------------
-# "CORRECTION" flow
-# ---------------------------------------------------------------------------
-
-if request_type == "CORRECTION":
-    st.info("Use this form to correct a misspelled or incorrect band, venue, or designer name. You can apply the correction to all posters or just specific ones.")
-
-    entity_label = st.radio("What needs correcting?", options=ENTITY_TYPES.keys())
-    entity_type = ENTITY_TYPES.get(entity_label)
-    entity_options = {"BAND": all_bands, "VENUE": all_venues, "DESIGNER": [d for d in all_designers if d != "UNKNOWN"]}.get(entity_type, [])
-
-    current_value = st.selectbox(f"Which {entity_label.lower()}?", options=entity_options, index=None)
-
-    if current_value:
-        count = sum(1 for p in all_posters if poster_has(p, entity_type, current_value))
-        st.info(f"There {'is' if count == 1 else 'are'} {count} poster{'s' if count != 1 else ''} with this {entity_label.lower()} in the archive.")
-
-        scope_label = st.radio("How should this be applied?", options=["Change all instances in the archive", "Only change specific posters"])
-
-        if scope_label == "Only change specific posters":
-            relevant_labels = {l: p for l, p in poster_labels.items() if poster_has(p, entity_type, current_value)}
-            selected_posters = poster_picker(relevant_labels, key="correction")
-
-        corrected_value = st.selectbox("What should it be changed to?", options=[o for o in entity_options if o != current_value], index=None, accept_new_options=True, placeholder="Select existing or type a new name")
-
-        notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help")
-
-        submit = st.button("Submit request", type="primary", icon=":material/send:")
-
-        scope = "GLOBAL" if scope_label == "Change all instances in the archive" else "SPECIFIC"
-        poster_ids = [relevant_labels[s]["POSTER_ID"] for s in selected_posters] if scope == "SPECIFIC" and selected_posters else None
-
-        if submit and not corrected_value: st.error("Please enter a corrected value.")
-        elif submit and scope == "SPECIFIC" and not poster_ids: st.error("Please select at least one poster.")
+        if submit and not permission: st.error("You must be a rights holder to submit an attribution request.")
         elif submit:
-            save_request(S, request_type="CORRECTION", entity_type=entity_type, scope=scope, poster_ids=poster_ids, current_value=normalise(current_value), requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
-            st.success("Request submitted. It will be reviewed by an admin.")
+            save_request(S, request_type="ATTRIBUTION", entity_type="DESIGNER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=normalise(designer_name) if designer_name else None, notes=notes.strip() if notes and notes.strip() else None)
+            st.toast("Request submitted. It will be reviewed by an admin.")
+            st.rerun()
+
+    # -------------------------------------------------------------------
+    # "CORRECTION" flow
+    # -------------------------------------------------------------------
+
+    if request_type == "CORRECTION":
+        st.info("Use this form to correct a misspelled or incorrect band, venue, designer, or event name. You can apply the correction to all posters or just specific ones.")
+
+        poster_bands = sorted(primary_poster["BANDS"])
+        poster_venue = [primary_poster["VENUE_NAME"]]
+        poster_designer = [primary_poster["DESIGNER_NAME"]] if primary_poster["DESIGNER_NAME"] != "UNKNOWN" else []
+        poster_event = [primary_poster["EVENT_NAME"]] if primary_poster.get("EVENT_NAME") else []
+
+        entity_label = st.radio("What needs correcting?", options=ENTITY_TYPES.keys())
+        entity_type = ENTITY_TYPES.get(entity_label)
+        scoped_options = {"BAND": poster_bands, "VENUE": poster_venue, "DESIGNER": poster_designer, "EVENT": poster_event}.get(entity_type, [])
+        full_options = {"BAND": all_bands, "VENUE": all_venues, "DESIGNER": [d for d in all_designers if d != "UNKNOWN"], "EVENT": []}.get(entity_type, [])
+
+        if entity_type == "EVENT":
+            current_value = primary_poster.get("EVENT_NAME") or ""
+            st.write(f"Current event name: **{current_value}**" if current_value else "This poster has no event name set.")
+
+            corrected_value = st.text_input("Correct event name", placeholder="Enter the correct event name")
+
+            notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="correction_notes")
+
+            submit = st.button("Submit request", type="primary", icon=":material/send:", key="correction_submit")
+
+            if submit and not corrected_value: st.error("Please enter a corrected value.")
+            elif submit:
+                save_request(S, request_type="CORRECTION", entity_type="EVENT", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=normalise(current_value) if current_value else None, requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
+                st.toast("Request submitted. It will be reviewed by an admin.")
+                st.rerun()
+
+        else:
+            current_value = st.selectbox(f"Which {entity_label.lower()}?", options=scoped_options, index=None)
+
+            if current_value:
+                additional_count = sum(1 for p in all_posters if poster_has(p, entity_type, current_value)) - 1
+                if additional_count > 0:
+                    st.info(f"There {'is' if additional_count == 1 else 'are'} {additional_count} additional poster{'s' if additional_count != 1 else ''} with this {entity_label.lower()} in the archive.")
+                else:
+                    st.info(f"No other posters have this {entity_label.lower()}.")
+
+                scope_label = st.radio("How should this be applied?", options=["Only change this poster", "Change all posters", "Change specific posters"])
+
+                if scope_label == "Change all posters":
+                    matching_labels = {l: p for l, p in poster_labels.items() if poster_has(p, entity_type, current_value)}
+                    if matching_labels:
+                        preview = list(matching_labels.values())
+                        preview_cols = st.columns(GRID_COLUMNS, gap="large")
+                        for i, p in enumerate(preview):
+                            with preview_cols[i % GRID_COLUMNS]:
+                                st.image(p["URL"])
+                                st.caption(f"ID: {p['POSTER_ID']}")
+
+                selected_posters = []
+                if scope_label == "Change specific posters":
+                    relevant_labels = {l: p for l, p in poster_labels.items() if poster_has(p, entity_type, current_value) and l != primary_label}
+                    selected_posters = poster_picker(relevant_labels, key="correction")
+
+                corrected_value = st.selectbox("What should it be changed to?", options=[o for o in full_options if o != current_value], index=None, accept_new_options=True, placeholder="Select existing or type a new name")
+
+                notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="correction_notes")
+
+                submit = st.button("Submit request", type="primary", icon=":material/send:", key="correction_submit")
+
+                if scope_label == "Only change this poster":
+                    scope = "SPECIFIC"
+                    poster_ids = [primary_poster["POSTER_ID"]]
+                elif scope_label == "Change all posters":
+                    scope = "GLOBAL"
+                    poster_ids = None
+                else:
+                    scope = "SPECIFIC"
+                    poster_ids = ([primary_poster["POSTER_ID"]] + [relevant_labels[s]["POSTER_ID"] for s in selected_posters]) if selected_posters else None
+
+                if submit and not corrected_value: st.error("Please enter a corrected value.")
+                elif submit and scope == "SPECIFIC" and not poster_ids: st.error("Please select at least one poster.")
+                elif submit:
+                    save_request(S, request_type="CORRECTION", entity_type=entity_type, scope=scope, poster_ids=poster_ids, current_value=normalise(current_value), requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
+                    st.toast("Request submitted. It will be reviewed by an admin.")
+                    st.rerun()
