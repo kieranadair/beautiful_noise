@@ -18,7 +18,7 @@ pg = st.navigation([gallery, upload, contact, terms_of_service])
 # Logo
 primary = st.get_option("theme.primaryColor")
 secondary = st.get_option("theme.linkColor")
-st.write(f':color[BEAUTIFUL]{{foreground={primary}}}NOISE :color[| GIG POSTER ARCHIVE]{{foreground={secondary}}}')
+st.write(f':color[BEAUTIFUL]{{foreground={primary}}}NOISE :color[| NAARM GIG POSTER ARCHIVE]{{foreground={secondary}}}')
 
 # Header content
 st.title(f"I took a walk down :color[memory lane...]{{foreground={primary}}}")
