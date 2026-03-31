@@ -25,11 +25,11 @@ st.title(f"I took a walk down :color[memory lane...]{{foreground={primary}}}")
 text = """
 **Beautiful Noise** is a living, community-driven archive of posters from Naarm's live music scene — it's aim is to capture and preserve the vibrancy, creativity, and magic behind this art.
 
-Every week, new gig posters decorate this city's street — bold, strange, and beautiful - born from the same underground talent that fills the stages. They are the visual pulse of our scene. Passion over polish, community over algorithm, reflecting the talent and diversity of the bands they promote.
+Every week, new gig posters decorate this city's streets — bold, strange, and beautiful — born from the same underground talent that fills its stages. They are the visual pulse of our scene, and reflect the talent and diversity of the bands they promote.
 
-But posters are ephemeral by nature. Torn down, pasted over, forgotten once the music fades. Without care, this rich visual history will disappear — and with it, the memory of the culture it represents.
+But posters are ephemeral by nature. Torn down, pasted over, lost to time once the show's over. Without care, this rich visual history will disappear — and with it, the memory of the culture it represents.
 
-This project exists to change that. To pull these works off the street (and away from the mercy of the algorithm), and into an independent archive that endures. A place where the art that backs up the music is preserved, celebrated, and given the recognition it deserves — not just for now, but for everyone who comes after.
+This project exists to change that. To pull these works off the street (and away from the mercy of the algorithm) and into an independent archive that endures. A place where this art can be preserved, celebrated, and given the recognition it deserves — not just for now, but for everyone who comes after.
 """
 st.write(text)
 
