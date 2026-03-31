@@ -59,12 +59,22 @@ def poster_picker(labels, key="default", help_text="Search by poster id, band, v
 st.subheader("Submit a request")
 st.write("Use this form to submit corrections, attribution requests, or takedown notices. All requests are reviewed by an admin before any changes are made.")
 
-primary_label = st.selectbox("Which poster is this about?", options=poster_labels.keys(), index=None, help="Search by poster id, band, venue and date")
+poster_param = st.query_params.get("poster")
+default_index = None
+if poster_param:
+    label_list = list(poster_labels.keys())
+    for i, label in enumerate(label_list):
+        if label.startswith(f"{poster_param} —"):
+            default_index = i
+            break
+    st.query_params.clear()
+
+primary_label = st.selectbox("Which poster is this about?", options=poster_labels.keys(), index=default_index, help="Search by poster id, band, venue and date")
 primary_poster = poster_labels.get(primary_label)
 
 if primary_poster:
     with st.container(border=True):
-        img_col, detail_col, *_ = st.columns(GRID_COLUMNS, gap="large")
+        img_col, detail_col = st.columns([1, 2], gap="large")
         with img_col:
             st.image(primary_poster["URL"])
         with detail_col:
@@ -125,18 +135,19 @@ if primary_poster:
         all_selected = [primary_poster] + [poster_labels[s] for s in extra_selected]
         all_ids = [p["POSTER_ID"] for p in all_selected]
 
-        designers = [p["DESIGNER_NAME"] for p in all_selected]
-        unknown_count = designers.count("UNKNOWN")
-        named_designers = sorted(set(d for d in designers if d != "UNKNOWN"))
+        if add_more and extra_selected:
+            designers = [p["DESIGNER_NAME"] for p in all_selected]
+            unknown_count = designers.count("UNKNOWN")
+            named_designers = sorted(set(d for d in designers if d != "UNKNOWN"))
 
-        if unknown_count == len(all_selected):
-            st.warning(f"All {unknown_count} selected poster(s) are attributed to an UNKNOWN designer.")
-        elif unknown_count:
-            st.warning(f"{unknown_count} of {len(all_selected)} selected poster(s) are attributed to an UNKNOWN designer. The rest are attributed to: {', '.join(named_designers)}.")
-        else:
-            st.info(f"Selected poster(s) are attributed to: {', '.join(named_designers)}.")
+            if unknown_count == len(all_selected):
+                st.warning(f"All {unknown_count} selected poster(s) are attributed to an UNKNOWN designer.")
+            elif unknown_count:
+                st.warning(f"{unknown_count} of {len(all_selected)} selected poster(s) are attributed to an UNKNOWN designer. The rest are attributed to: {', '.join(named_designers)}.")
+            else:
+                st.info(f"Selected poster(s) are attributed to: {', '.join(named_designers)}.")
 
-        designer_name = st.selectbox("Correct designer name (optional)", options=all_designers, index=None, accept_new_options=True, placeholder="Select existing or type a new name")
+        designer_name = st.selectbox("Correct designer name (optional)", options=[d for d in all_designers if d != "UNKNOWN"], index=None, accept_new_options=True, placeholder="Select existing or type a new name")
 
         permission = st.checkbox("I am the rights holder of these posters")
 
@@ -159,7 +170,7 @@ if primary_poster:
 
         poster_bands = sorted(primary_poster["BANDS"])
         poster_venue = [primary_poster["VENUE_NAME"]]
-        poster_designer = [primary_poster["DESIGNER_NAME"]] if primary_poster["DESIGNER_NAME"] != "UNKNOWN" else []
+        poster_designer = [primary_poster["DESIGNER_NAME"]]
         poster_event = [primary_poster["EVENT_NAME"]] if primary_poster.get("EVENT_NAME") else []
 
         entity_label = st.radio("What needs correcting?", options=ENTITY_TYPES.keys())
@@ -192,31 +203,32 @@ if primary_poster:
 
             if current_value:
                 additional_count = sum(1 for p in all_posters if poster_has(p, entity_type, current_value)) - 1
-                if not (entity_type == "DESIGNER" and current_value == "UNKNOWN"):
-                    if additional_count > 0:
+
+                if additional_count > 0:
+                    if not (entity_type == "DESIGNER" and current_value == "UNKNOWN"):
                         st.info(f"There {'is' if additional_count == 1 else 'are'} {additional_count} additional poster{'s' if additional_count != 1 else ''} with **{current_value}** in the archive.")
-                    else:
-                        st.info(f"No other posters have **{current_value}**.")
 
-                scope_options = ["Only change this poster", f"Select additional posters that mention {current_value}", f"Change all posters that mention {current_value}"]
-                if entity_type == "DESIGNER" and current_value == "UNKNOWN":
-                    scope_options = ["Only change this poster", f"Select additional posters that mention {current_value}"]
-                scope_label = st.radio("How should this be applied?", options=scope_options)
+                    scope_options = ["Only change this poster", f"Select additional posters that mention {current_value}", f"Change all posters that mention {current_value}"]
+                    if entity_type == "DESIGNER" and current_value == "UNKNOWN":
+                        scope_options = ["Only change this poster", f"Select additional posters that mention {current_value}"]
+                    scope_label = st.radio("How should this be applied?", options=scope_options)
 
-                if scope_label == scope_options[2]:
-                    matching_labels = {l: p for l, p in poster_labels.items() if poster_has(p, entity_type, current_value)}
-                    if matching_labels:
-                        preview = list(matching_labels.values())
-                        preview_cols = st.columns(GRID_COLUMNS, gap="large")
-                        for i, p in enumerate(preview):
-                            with preview_cols[i % GRID_COLUMNS]:
-                                st.image(p["URL"])
-                                st.caption(f"ID: {p['POSTER_ID']}")
+                    if len(scope_options) > 2 and scope_label == scope_options[2]:
+                        matching_labels = {l: p for l, p in poster_labels.items() if poster_has(p, entity_type, current_value)}
+                        if matching_labels:
+                            preview = list(matching_labels.values())
+                            preview_cols = st.columns(GRID_COLUMNS, gap="large")
+                            for i, p in enumerate(preview):
+                                with preview_cols[i % GRID_COLUMNS]:
+                                    st.image(p["URL"])
+                                    st.caption(f"ID: {p['POSTER_ID']}")
 
-                selected_posters = []
-                if scope_label == scope_options[1]:
-                    relevant_labels = {l: p for l, p in poster_labels.items() if poster_has(p, entity_type, current_value) and l != primary_label}
-                    selected_posters = poster_picker(relevant_labels, key="correction", pinned=[primary_poster])
+                    selected_posters = []
+                    if scope_label == scope_options[1]:
+                        relevant_labels = {l: p for l, p in poster_labels.items() if poster_has(p, entity_type, current_value) and l != primary_label}
+                        selected_posters = poster_picker(relevant_labels, key="correction", pinned=[primary_poster])
+                else:
+                    scope_label = None
 
                 corrected_value = st.selectbox(f"What should **{current_value}** be changed to?", options=[o for o in full_options if o != current_value], index=None, accept_new_options=True, placeholder="Select existing or type a new name")
 
@@ -224,15 +236,18 @@ if primary_poster:
 
                 submit = st.button("Submit request", type="primary", icon=":material/send:", key="correction_submit")
 
-                if scope_label == scope_options[0]:
+                if additional_count > 0 and scope_label == scope_options[0]:
                     scope = "SPECIFIC"
                     poster_ids = [primary_poster["POSTER_ID"]]
-                elif scope_label == scope_options[2]:
+                elif additional_count > 0 and len(scope_options) > 2 and scope_label == scope_options[2]:
                     scope = "GLOBAL"
                     poster_ids = None
-                else:
+                elif additional_count > 0:
                     scope = "SPECIFIC"
                     poster_ids = ([primary_poster["POSTER_ID"]] + [relevant_labels[s]["POSTER_ID"] for s in selected_posters]) if selected_posters else None
+                else:
+                    scope = "SPECIFIC"
+                    poster_ids = [primary_poster["POSTER_ID"]]
 
                 if submit and not corrected_value: st.error("Please enter a corrected value.")
                 elif submit and scope == "SPECIFIC" and not poster_ids: st.error("Please select at least one poster.")
