@@ -9,7 +9,7 @@ enableStaticServing = true
 base = "light"
 
 # ── Colours ───────────────────────────────────────────────────────────────
-primaryColor = "#ff4d00"
+primaryColor = "#ff0066"
 backgroundColor = "#f5f5f5"
 secondaryBackgroundColor = "#ffffff"
 textColor = "#121212"
