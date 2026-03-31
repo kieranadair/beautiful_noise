@@ -35,6 +35,7 @@ REQUEST_TYPES = {
     "Correct a band, venue, designer or event name": "CORRECTION",
     "Correct the headliner / support ordering": "HEADLINER_CORRECTION",
     "Correct the date on a poster": "DATE_CORRECTION",
+    "Add a missing band": "MISSING_BAND",
 }
 
 ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Designer": "DESIGNER", "Event name": "EVENT"}
@@ -311,5 +312,32 @@ if primary_poster:
         elif submit:
             save_request(S, request_type="CORRECTION", entity_type="DATE", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=str(current_date) if current_date else None, requested_value=str(corrected_date), notes=notes.strip() if notes and notes.strip() else None)
             st.session_state["request_submitted"] = "Date correction submitted. It will be reviewed by an admin."
+            st.query_params.clear()
+            st.rerun()
+
+    # -------------------------------------------------------------------
+    # "MISSING_BAND" flow
+    # -------------------------------------------------------------------
+
+    if request_type == "MISSING_BAND":
+        st.info("Use this form to add a band that's missing from this poster's listing.", icon=":material/info:")
+
+        st.write(f"**Headliners:** {', '.join(primary_poster['HEADLINERS'])}")
+        st.write(f"**Supports:** {', '.join(primary_poster['SUPPORTS']) if primary_poster['SUPPORTS'] else ''}")
+
+        band_name = st.selectbox("Band to add", options=[b for b in all_bands if b not in primary_poster["BANDS"]], index=None, accept_new_options=True, placeholder="Select existing or type a new name", key="mb_band")
+
+        billing = st.radio("Billing", options=["Headliner", "Support act"], index=None, key="mb_billing")
+
+        notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="mb_notes")
+
+        submit = st.button("Submit request", type="primary", icon=":material/send:", key="mb_submit")
+
+        if submit and not band_name: st.error("Please select or enter a band name.")
+        elif submit and not billing: st.error("Please select headliner or support act.")
+        elif submit:
+            requested = json.dumps({"band": normalise(band_name), "is_headliner": billing == "Headliner"})
+            save_request(S, request_type="MISSING_BAND", entity_type="BAND", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=None, requested_value=requested, notes=notes.strip() if notes and notes.strip() else None)
+            st.session_state["request_submitted"] = "Missing band request submitted. It will be reviewed by an admin."
             st.query_params.clear()
             st.rerun()
