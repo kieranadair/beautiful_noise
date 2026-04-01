@@ -33,9 +33,8 @@ REQUEST_TYPES = {
     "Authorise and/or provide designer attribution to a community upload": "ATTRIBUTION",
     "Request a poster takedown": "TAKEDOWN",
     "Correct a band, venue, designer or event name": "CORRECTION",
-    "Correct the headliner / support ordering": "HEADLINER_CORRECTION",
     "Correct the date on a poster": "DATE_CORRECTION",
-    "Add a missing band": "MISSING_BAND",
+    "Add/remove a band from a lineup, or change the headliner/support ordering": "LINEUP_EDIT",
 }
 
 ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Designer": "DESIGNER", "Event name": "EVENT"}
@@ -263,34 +262,6 @@ if primary_poster:
                     st.query_params.clear()
                     st.rerun()
 
-    # -------------------------------------------------------------------
-    # "HEADLINER_CORRECTION" flow
-    # -------------------------------------------------------------------
-
-    if request_type == "HEADLINER_CORRECTION":
-        st.info("Use this form to correct which bands are headliners and which are support acts on this poster.", icon=":material/info:")
-
-        poster_bands = sorted(primary_poster["BANDS"])
-        headliners = st.multiselect("Headliners", options=poster_bands, default=sorted(primary_poster["HEADLINERS"]), key="hl_headliners")
-        supports = st.multiselect("Support Acts", options=poster_bands, default=sorted(primary_poster["SUPPORTS"]), key="hl_supports")
-
-        notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="hl_notes")
-
-        submit = st.button("Submit request", type="primary", icon=":material/send:", key="hl_submit")
-
-        if submit:
-            overlap = set(headliners) & set(supports)
-            if overlap:
-                st.error(f"These bands appear in both lists: {', '.join(sorted(overlap))}. Please fix before submitting.")
-            elif not headliners:
-                st.error("At least one band must be a headliner.")
-            else:
-                requested = json.dumps({"headliners": sorted(headliners), "supports": sorted(supports)})
-                current = json.dumps({"headliners": sorted(primary_poster["HEADLINERS"]), "supports": sorted(primary_poster["SUPPORTS"])})
-                save_request(S, request_type="CORRECTION", entity_type="BILLING", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=current, requested_value=requested, notes=notes.strip() if notes and notes.strip() else None)
-                st.session_state["request_submitted"] = "Headliner correction submitted. It will be reviewed by an admin."
-                st.query_params.clear()
-                st.rerun()
 
     # -------------------------------------------------------------------
     # "DATE_CORRECTION" flow
@@ -316,28 +287,88 @@ if primary_poster:
             st.rerun()
 
     # -------------------------------------------------------------------
-    # "MISSING_BAND" flow
+    # "LINEUP_EDIT" flow
     # -------------------------------------------------------------------
-
-    if request_type == "MISSING_BAND":
-        st.info("Use this form to add a band that's missing from this poster's listing.", icon=":material/info:")
-
-        st.write(f"**Headliners:** {', '.join(primary_poster['HEADLINERS'])}")
-        st.write(f"**Supports:** {', '.join(primary_poster['SUPPORTS']) if primary_poster['SUPPORTS'] else ''}")
-
-        band_name = st.selectbox("Band to add", options=[b for b in all_bands if b not in primary_poster["BANDS"]], index=None, accept_new_options=True, placeholder="Select existing or type a new name", key="mb_band")
-
-        billing = st.radio("Billing", options=["Headliner", "Support act"], index=None, key="mb_billing")
-
-        notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="mb_notes")
-
-        submit = st.button("Submit request", type="primary", icon=":material/send:", key="mb_submit")
-
-        if submit and not band_name: st.error("Please select or enter a band name.")
-        elif submit and not billing: st.error("Please select headliner or support act.")
-        elif submit:
-            requested = json.dumps({"band": normalise(band_name), "is_headliner": billing == "Headliner"})
-            save_request(S, request_type="MISSING_BAND", entity_type="BAND", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=None, requested_value=requested, notes=notes.strip() if notes and notes.strip() else None)
-            st.session_state["request_submitted"] = "Missing band request submitted. It will be reviewed by an admin."
-            st.query_params.clear()
-            st.rerun()
+    
+    if request_type == "LINEUP_EDIT":
+        st.info(
+            "Use this form to add or remove bands from a lineup, or adjust which bands are headliners vs support acts.",
+            icon=":material/info:"
+        )
+    
+        # Combine all known bands + current poster bands
+        all_options = sorted(set(all_bands) | set(primary_poster["BANDS"]))
+    
+        headliners = st.multiselect(
+            "Headliners",
+            options=all_options,
+            default=sorted(primary_poster["HEADLINERS"]),
+            accept_new_options=True,
+            key="le_headliners"
+        )
+    
+        supports = st.multiselect(
+            "Support Acts",
+            options=all_options,
+            default=sorted(primary_poster["SUPPORTS"]),
+            accept_new_options=True,
+            key="le_supports"
+        )
+    
+        notes = st.text_area(
+            "Notes (optional)",
+            placeholder="Any extra context that might help",
+            key="le_notes"
+        )
+    
+        submit = st.button(
+            "Submit request",
+            type="primary",
+            icon=":material/send:",
+            key="le_submit"
+        )
+    
+        if submit:
+            # Normalise input
+            headliners_n = [normalise(b) for b in headliners]
+            supports_n = [normalise(b) for b in supports]
+    
+            overlap = set(headliners_n) & set(supports_n)
+    
+            if overlap:
+                st.error(f"These bands appear in both lists: {', '.join(sorted(overlap))}. Please fix before submitting.")
+    
+            elif not headliners_n:
+                st.error("At least one band must be a headliner.")
+    
+            else:
+                # Deduplicate within each list
+                if len(headliners_n) != len(set(headliners_n)):
+                    st.error("Duplicate bands found in headliners.")
+                elif len(supports_n) != len(set(supports_n)):
+                    st.error("Duplicate bands found in supports.")
+                else:
+                    requested = json.dumps({
+                        "headliners": sorted(headliners_n),
+                        "supports": sorted(supports_n)
+                    })
+    
+                    current = json.dumps({
+                        "headliners": sorted(primary_poster["HEADLINERS"]),
+                        "supports": sorted(primary_poster["SUPPORTS"])
+                    })
+    
+                    save_request(
+                        S,
+                        request_type="CORRECTION",
+                        entity_type="BILLING",
+                        scope="SPECIFIC",
+                        poster_ids=[primary_poster["POSTER_ID"]],
+                        current_value=current,
+                        requested_value=requested,
+                        notes=notes.strip() if notes and notes.strip() else None
+                    )
+    
+                    st.session_state["request_submitted"] = "Lineup edit request submitted. It will be reviewed by an admin."
+                    st.query_params.clear()
+                    st.rerun()
