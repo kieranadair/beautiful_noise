@@ -4,14 +4,65 @@ from snowflake.snowpark.functions import col, when_not_matched, lit, call_builti
 from config import DB, SC, STAGE, IMG_FORMAT
 import json, uuid, functools
 from io import BytesIO
+from cryptography.hazmat.primitives import serialization
 
-@st.cache_resource(show_spinner="Connecting to poster database")
-def get_session() -> Session:
-    """Create and cache a Snowpark session. Cached via @st.cache_resource — returns
-    the same session object on every call until cleared by _reconnect()."""
-    S = Session.builder.configs(st.secrets["connections"]["snowflake"]).create()
-    S.use_schema(f"{DB}.{SC}")
-    return S
+
+@st.cache_resource(show_spinner="Loading poster archive...")
+def get_session():
+    """
+    Create and cache a Snowflake Snowpark session using key-pair authentication.
+    
+    This function establishes a secure connection to Snowflake using an encrypted
+    RSA private key and passphrase stored in Streamlit secrets. The private key
+    is loaded from PEM format, decrypted using the passphrase, and converted into
+    DER-encoded PKCS#8 bytes as required by the Snowflake Python connector.
+    
+    The resulting session is cached using Streamlit's `@st.cache_resource` to
+    avoid re-authentication on every rerun of the app.
+    
+    Returns:
+        snowflake.snowpark.Session: An authenticated Snowpark session object
+        configured for the application database, schema, warehouse, and role.
+    
+    Security:
+        - Uses key-pair authentication (no password or MFA required)
+        - Private key is never exposed outside runtime memory
+        - Passphrase is read from Streamlit secrets at runtime
+    """
+
+    secrets = st.secrets["connections"]["snowflake"]
+
+    private_key = secrets["private_key"]
+    passphrase = secrets["private_key_passphrase"]
+
+    # Load encrypted PEM key correctly
+    p_key = serialization.load_pem_private_key(
+    p_key = serialization.load_pem_private_key(
+        private_key.encode("utf-8"),
+        password=passphrase.encode("utf-8"),
+    )
+
+    # Convert to DER (Snowflake requirement)
+    pkb = p_key.private_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+
+    session = Session.builder.configs({
+        "account": secrets["account"],
+        "user": secrets["user"],
+        "role": secrets["role"],
+        "warehouse": secrets["warehouse"],
+        "database": secrets["database"],
+        "schema": secrets["schema"],
+        "private_key": pkb,
+    }).create()
+
+    session.use_schema(f"{secrets['database']}.{secrets['schema']}")
+
+    return session
+
 
 def _reconnect() -> Session:
     """Clear the cached session and create a fresh one. Called by with_retry on failure."""

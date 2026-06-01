@@ -1,5 +1,7 @@
 # Workspace AI context
 AGENTS.md
+.context/
+.snowflake/
 
 # Admin app (deployed as Streamlit in Snowflake, not part of public app)
 admin.py

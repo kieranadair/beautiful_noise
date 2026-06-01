@@ -4,3 +4,4 @@ rapidfuzz
 Pillow
 PyMuPDF
 pillow-heif
+cryptography
