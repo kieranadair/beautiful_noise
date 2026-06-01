@@ -1,6 +1,6 @@
 from datetime import date
 from io import BytesIO
-from rapidfuzz import process
+from rapidfuzz import process, fuzz
 from PIL import Image
 import fitz
 from config import IMG_FORMAT
@@ -16,7 +16,7 @@ def fuzzy_match(value: str | None, existing: list[str], threshold: int = 80) -> 
     Uses rapidfuzz for fast approximate string matching."""
     if not value or not existing:
         return value
-    match = process.extractOne(value, existing, score_cutoff=threshold)
+    match = process.extractOne(value, existing, scorer=fuzz.token_set_ratio, score_cutoff=threshold)
     return match[0] if match else value
 
 def infer_date(mm_dd: str) -> date:
