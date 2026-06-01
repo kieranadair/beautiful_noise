@@ -59,8 +59,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_designers, months):
                 o = visible_posters[idx]
                 with c.container():
                     st.image(o["URL"])
-                    if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}"):
-                        show_poster(o)
+                    if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}"): show_poster(o)
         st.space("small")
 
     # --- Pagination ---
@@ -74,7 +73,6 @@ def poster_grid(all_posters, all_bands, all_venues, all_designers, months):
 # Fragment: poster detail dialog
 # ---------------------------------------------------------------------------
 
-@st.fragment
 @st.dialog(":material/visibility:", width="large")
 def show_poster(poster):
     left, right = st.columns([1, 1])
