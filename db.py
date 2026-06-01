@@ -37,7 +37,6 @@ def get_session():
 
     # Load encrypted PEM key correctly
     p_key = serialization.load_pem_private_key(
-    p_key = serialization.load_pem_private_key(
         private_key.encode("utf-8"),
         password=passphrase.encode("utf-8"),
     )
@@ -49,7 +48,7 @@ def get_session():
         encryption_algorithm=serialization.NoEncryption(),
     )
 
-    session = Session.builder.configs({
+    S = Session.builder.configs({
         "account": secrets["account"],
         "user": secrets["user"],
         "role": secrets["role"],
@@ -59,9 +58,9 @@ def get_session():
         "private_key": pkb,
     }).create()
 
-    session.use_schema(f"{secrets['database']}.{secrets['schema']}")
+    S.use_schema(f"{secrets['database']}.{secrets['schema']}")
 
-    return session
+    return S
 
 
 def _reconnect() -> Session:
