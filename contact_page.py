@@ -21,7 +21,7 @@ st.divider()
 
 S = get_session()
 all_posters = get_all_posters(S)
-all_bands, all_venues, all_designers, _, _ = get_poster_vars(all_posters)
+all_bands, all_venues, all_credits, _, _ = get_poster_vars(all_posters)
 
 # ---------------------------------------------------------------------------
 # Constants & lookup maps
@@ -30,14 +30,14 @@ all_bands, all_venues, all_designers, _, _ = get_poster_vars(all_posters)
 poster_labels = {f"{p['POSTER_ID']} — {', '.join(p['BANDS'][:2])} — {p['VENUE_NAME']} — {p['DATE']:%d %b %Y}": p for p in all_posters}
 
 REQUEST_TYPES = {
-    "Authorise and/or provide designer attribution to a community upload": "ATTRIBUTION",
+    "Authorise a community upload (I'm the rights holder)": "ATTRIBUTION",
     "Request a poster takedown": "TAKEDOWN",
-    "Correct a band, venue, designer or event name": "CORRECTION",
+    "Correct a band, venue, credit or event name": "CORRECTION",
     "Correct the date on a poster": "DATE_CORRECTION",
     "Add/remove a band from a lineup, or change the headliner/support ordering": "LINEUP_EDIT",
 }
 
-ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Designer": "DESIGNER", "Event name": "EVENT"}
+ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Credit": "CREDIT", "Event name": "EVENT"}
 
 GRID_COLUMNS = 5
 
@@ -84,7 +84,7 @@ if primary_poster:
             st.write(f"**Event:** {primary_poster['EVENT_NAME'] or ''}")
             st.write(f"**Venue:** {primary_poster['VENUE_NAME']}")
             st.write(f"**Date:** {primary_poster['DATE']:%d %B %Y}")
-            st.write(f"**Designer:** {primary_poster['DESIGNER_NAME']}")
+            st.write(f"**Credits:** {', '.join(primary_poster['CREDITS']) if primary_poster['CREDITS'] else 'Unknown'}")
             if primary_poster["UPLOAD_TYPE"] == "COMMUNITY":
                 st.warning("Community upload")
             st.caption(f"ID: {primary_poster['POSTER_ID']}")
@@ -129,7 +129,7 @@ if primary_poster:
 
     if request_type == "ATTRIBUTION":
 
-        st.info("Community members may upload posters they believe have cultural value to the archive, though these may sometimes miss details like the correct designer attribution. If you are a rights holder to a poster, use this form to authorise us to remove the community upload flag and correct the designer attribution if needed.", icon=":material/info:")
+        st.info("Community members may upload posters they believe have cultural value to the archive. If you are a rights holder, use this form to authorise us to remove the community upload flag. To correct or add credits (designer, photographer, etc.), use the \"Correct a band, venue, credit or event name\" option instead.", icon=":material/info:")
 
         additional_labels = {l: p for l, p in poster_labels.items() if l != primary_label and p["UPLOAD_TYPE"] == "COMMUNITY"}
         add_more = st.checkbox("Add additional posters to this request", key="attribution_more")
@@ -137,20 +137,6 @@ if primary_poster:
 
         all_selected = [primary_poster] + [poster_labels[s] for s in extra_selected]
         all_ids = [p["POSTER_ID"] for p in all_selected]
-
-        if add_more and extra_selected:
-            designers = [p["DESIGNER_NAME"] for p in all_selected]
-            unknown_count = designers.count("UNKNOWN")
-            named_designers = sorted(set(d for d in designers if d != "UNKNOWN"))
-
-            if unknown_count == len(all_selected):
-                st.warning(f"All {unknown_count} selected poster(s) are attributed to an UNKNOWN designer.")
-            elif unknown_count:
-                st.warning(f"{unknown_count} of {len(all_selected)} selected poster(s) are attributed to an UNKNOWN designer. The rest are attributed to: {', '.join(named_designers)}.")
-            else:
-                st.info(f"Selected poster(s) are attributed to: {', '.join(named_designers)}.")
-
-        designer_name = st.selectbox("Correct designer name (optional)", options=[d for d in all_designers if d != "UNKNOWN"], index=None, accept_new_options=True, placeholder="Select existing or type a new name")
 
         permission = st.checkbox("I am the rights holder of these posters")
 
@@ -160,7 +146,7 @@ if primary_poster:
 
         if submit and not permission: st.error("You must be a rights holder to submit an attribution request.")
         elif submit:
-            save_request(S, request_type="ATTRIBUTION", entity_type="DESIGNER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=normalise(designer_name) if designer_name else None, notes=notes.strip() if notes and notes.strip() else None)
+            save_request(S, request_type="ATTRIBUTION", entity_type="DESIGNER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
             st.session_state["request_submitted"] = "Attribution request submitted. It will be reviewed by an admin."
             st.query_params.clear()
             st.rerun()
@@ -170,17 +156,17 @@ if primary_poster:
     # -------------------------------------------------------------------
 
     if request_type == "CORRECTION":
-        st.info("Use this form to correct a misspelled or incorrect band, venue, designer, or event name. You can apply the correction to all posters or just specific ones.", icon=":material/info:")
+        st.info("Use this form to correct a misspelled or incorrect band, venue, credit, or event name. You can apply the correction to all posters or just specific ones.", icon=":material/info:")
 
         poster_bands = sorted(primary_poster["BANDS"])
         poster_venue = [primary_poster["VENUE_NAME"]]
-        poster_designer = [primary_poster["DESIGNER_NAME"]]
+        poster_credits = sorted(primary_poster["CREDITS"])
         poster_event = [primary_poster["EVENT_NAME"]] if primary_poster.get("EVENT_NAME") else []
 
         entity_label = st.radio("What needs correcting?", options=ENTITY_TYPES.keys())
         entity_type = ENTITY_TYPES.get(entity_label)
-        scoped_options = {"BAND": poster_bands, "VENUE": poster_venue, "DESIGNER": poster_designer, "EVENT": poster_event}.get(entity_type, [])
-        full_options = {"BAND": all_bands, "VENUE": all_venues, "DESIGNER": [d for d in all_designers if d != "UNKNOWN"], "EVENT": []}.get(entity_type, [])
+        scoped_options = {"BAND": poster_bands, "VENUE": poster_venue, "CREDIT": poster_credits, "EVENT": poster_event}.get(entity_type, [])
+        full_options = {"BAND": all_bands, "VENUE": all_venues, "CREDIT": all_credits, "EVENT": []}.get(entity_type, [])
 
         if entity_type == "EVENT":
             current_value = primary_poster.get("EVENT_NAME") or ""
@@ -200,7 +186,7 @@ if primary_poster:
                 st.rerun()
 
         else:
-            if entity_type == "BAND":
+            if entity_type in ("BAND", "CREDIT"):
                 current_value = st.selectbox(f"Which {entity_label.lower()}?", options=scoped_options, index=None)
             else:
                 current_value = scoped_options[0] if scoped_options else None
@@ -210,12 +196,9 @@ if primary_poster:
                 additional_count = sum(1 for p in all_posters if poster_has(p, entity_type, current_value)) - 1
 
                 if additional_count > 0:
-                    if not (entity_type == "DESIGNER" and current_value == "UNKNOWN"):
-                        st.info(f"There {'is' if additional_count == 1 else 'are'} {additional_count} additional poster{'s' if additional_count != 1 else ''} with **{current_value}** in the archive.")
+                    st.info(f"There {'is' if additional_count == 1 else 'are'} {additional_count} additional poster{'s' if additional_count != 1 else ''} with **{current_value}** in the archive.")
 
                     scope_options = ["Only change this poster", f"Select additional posters that mention {current_value}", f"Change all posters that mention {current_value}"]
-                    if entity_type == "DESIGNER" and current_value == "UNKNOWN":
-                        scope_options = ["Only change this poster", "Select additional posters to update"]
                     scope_label = st.radio("How should this be applied?", options=scope_options)
 
                     if len(scope_options) > 2 and scope_label == scope_options[2]:

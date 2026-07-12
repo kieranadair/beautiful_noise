@@ -35,7 +35,7 @@ if "upload_key" not in ss: ss["upload_key"] = 0
 
 S = get_session()
 all_posters = get_all_posters(S)
-all_bands, all_venues, all_designers, date_min, date_max = get_poster_vars(all_posters)
+all_bands, all_venues, all_credits, date_min, date_max = get_poster_vars(all_posters)
 
 # ---------------------------------------------------------------------------
 # Page heading
@@ -74,7 +74,7 @@ with left:
         event_date = st.date_input("Event Date", value=r.get("inferred_date"), format="DD/MM/YYYY", disabled=form_disabled)
         venue = st.selectbox("Venue", options=venue_options, index=venue_options.index(r["matched_venue"]) if r.get("matched_venue") in venue_options else None, accept_new_options=True, disabled=form_disabled)
         event_name = st.text_input("Event Name", value=r.get("normed_event_name", ""), placeholder="Leave empty if not a named event", disabled=form_disabled)
-        designer_name = st.selectbox("Designer", options=sorted(set(all_designers + ["UNKNOWN"])), index=None, accept_new_options=True, disabled=form_disabled)
+        credits = st.multiselect("Credits", options=all_credits, accept_new_options=True, disabled=form_disabled, help="Designers, photographers, illustrators — anyone credited on the poster. Leave empty if unknown.")
         upload_type = st.radio("Upload type", options=["I created this poster or have the creator's permission to share it", "I'm sharing this for its historical value to the community — I don't hold the rights"], index=None, disabled=form_disabled)
         st.caption("By uploading, you agree to the [Terms of Service](/terms_of_service)")
         submitted = st.form_submit_button("Save Poster", type="primary", disabled=form_disabled, icon=":material/check:")
@@ -90,8 +90,6 @@ with left:
             errors.append("At least one band must be a headliner.")
         if not venue:
             errors.append("Please ensure the venue is filled in.")
-        if not designer_name:
-            errors.append("Please select or enter a designer. If unknown, choose 'UNKNOWN' from the list.")
         for e in errors:
             st.error(e)
 
@@ -105,7 +103,7 @@ with left:
         else:
             with st.spinner("Saving... Please don't close this page."):
                 upload_type_val = "RIGHTS_HOLDER" if upload_type.startswith("I created") else "COMMUNITY"
-                save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], upload_type=upload_type_val, **prepare_save_data(headliners, supports, event_date, venue, event_name, designer_name))
+                save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], upload_type=upload_type_val, **prepare_save_data(headliners, supports, event_date, venue, event_name, credits))
                 get_all_posters.clear()
                 ss["saved"] = True
                 st.rerun()

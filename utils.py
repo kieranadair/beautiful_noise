@@ -71,8 +71,8 @@ def heic_to_image_bytes(file: BytesIO) -> BytesIO:
     buf.seek(0)
     return buf
 
-def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None = None, venue_filter: list[str] | None = None, designer_filter: list[str] | None = None, month_range: tuple | None = None, headline_only: bool = False) -> list[dict]:
-    """Filter cached poster list in Python by bands, venues, designers, month range, and headliner flag.
+def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None = None, venue_filter: list[str] | None = None, credit_filter: list[str] | None = None, month_range: tuple | None = None, headline_only: bool = False) -> list[dict]:
+    """Filter cached poster list in Python by bands, venues, credits, month range, and headliner flag.
     When headline_only is True and bands are filtered, only matches bands that appear as headliners.
     All filtering is done client-side on the cached result, not in Snowflake."""
     posters = all_posters
@@ -85,22 +85,22 @@ def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None 
     if venue_filter:
         venue_set = set(venue_filter)
         posters = [p for p in posters if p["VENUE_NAME"] in venue_set]
-    if designer_filter:
-        designer_set = set(designer_filter)
-        posters = [p for p in posters if p["DESIGNER_NAME"] in designer_set]
+    if credit_filter:
+        credit_set = set(credit_filter)
+        posters = [p for p in posters if any(c in credit_set for c in p["CREDITS"])]
     if month_range:
         posters = [p for p in posters if month_range[0] <= p["DATE"].replace(day=1) <= month_range[1]]
     return posters
 
 def get_poster_vars(all_posters: list[dict]) -> tuple[list[str], list[str], list[str], date, date]:
-    """Extract sorted unique bands, venues, designers, and date range from cached poster data.
+    """Extract sorted unique bands, venues, credits, and date range from cached poster data.
     Used to populate filter options and form dropdowns."""
     all_bands = sorted(set(band for o in all_posters for band in o["BANDS"]))
     all_venues = sorted(set(o["VENUE_NAME"] for o in all_posters))
-    all_designers = sorted(set(o["DESIGNER_NAME"] for o in all_posters))
+    all_credits = sorted(set(c for o in all_posters for c in o["CREDITS"]))
     date_min = min(o["DATE"] for o in all_posters)
     date_max = max(o["DATE"] for o in all_posters)
-    return all_bands, all_venues, all_designers, date_min, date_max
+    return all_bands, all_venues, all_credits, date_min, date_max
 
 def prepare_review_defaults(headliners: list[str], supports: list[str], date_str: str, venue: str, event_name: str | None, all_bands: list[str], all_venues: list[str]) -> tuple[list[str], list[str], date, str | None, str | None]:
     """Normalise, fuzzy-match, and infer date from raw AI extraction values.
@@ -119,19 +119,21 @@ def prepare_review_defaults(headliners: list[str], supports: list[str], date_str
     
     return matched_headliners, matched_supports, inferred_date, matched_venue, normed_event_name
 
-def prepare_save_data(headliners: list[str], supports: list[str], event_date, venue: str, event_name: str, designer_name: str) -> dict:
+def prepare_save_data(headliners: list[str], supports: list[str], event_date, venue: str, event_name: str, credits: list[str]) -> dict:
     """Normalise raw form values into a clean dict ready for save_poster().
     Applies normalise() to all text fields; passes event_date through as-is.
-    bands is the merged headliners + supports list; headliners preserved for IS_HEADLINER flag."""
+    bands is the merged headliners + supports list; headliners preserved for IS_HEADLINER flag.
+    credits is normalised the same way as bands — a flat list, may be empty."""
     normed_headliners = [n for b in headliners if (n := normalise(b))]
     normed_supports = [n for b in supports if (n := normalise(b))]
+    normed_credits = [n for c in credits if (n := normalise(c))]
     return {
         "bands": normed_headliners + normed_supports,
         "headliners": normed_headliners,
         "event_date": event_date,
         "venue": normalise(venue) or "",
         "event_name": normalise(event_name),
-        "designer_name": normalise(designer_name)
+        "credits": normed_credits
     }
 
 def check_duplicate_md5(md5_hash: str, all_posters: list[dict]) -> bool:
@@ -162,6 +164,7 @@ def month_range(start: date, end: date) -> list[date]:
     return months
 
 def poster_has(p: dict, entity_type: str, value: str) -> bool:
-    """Check if a poster matches an entity value by type. Works with cached poster dicts."""
-    if entity_type == "BAND": return value in p["BANDS"]
-    return p[{"VENUE": "VENUE_NAME", "DESIGNER": "DESIGNER_NAME"}[entity_type]] == value
+    """Check if a poster matches an entity value by type. Works with cached poster dicts.
+    BAND and CREDIT are multi-valued (membership); VENUE is scalar (equality)."""
+    if entity_type in ("BAND", "CREDIT"): return value in p[{"BAND": "BANDS", "CREDIT": "CREDITS"}[entity_type]]
+    return p[{"VENUE": "VENUE_NAME"}[entity_type]] == value

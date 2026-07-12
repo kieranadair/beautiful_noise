@@ -25,24 +25,24 @@ if "limit" not in ss: ss["limit"] = (GALLERY_COLUMNS * 3)
 # ---------------------------------------------------------------------------
 
 @st.fragment
-def poster_grid(all_posters, all_bands, all_venues, all_designers, months):
+def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
 
     # --- Filters (all client-side on cached data) ---
     month_fmt = lambda d: d.strftime("%b %Y")
     c1, c2, c3, c4 = st.columns(4)
     with c1: band_filter  = st.multiselect("Bands", options=all_bands)
-    with c2: designer_filter = st.multiselect("Designers", options=all_designers)
+    with c2: credit_filter = st.multiselect("Credits", options=all_credits)
     with c3: venue_filter = st.multiselect("Venues", options=all_venues)
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
     headline_only = st.toggle("Headline shows only", disabled=not band_filter) if band_filter else False
 
-    filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, designer_filter, month_range_filter, headline_only)
+    filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, credit_filter, month_range_filter, headline_only)
 
     st.divider()
 
     # --- Empty state ---
     if not filtered_posters:
-        st.info("No posters match your filters." if (band_filter or venue_filter or designer_filter or month_range_filter) else "No posters uploaded yet.")
+        st.info("No posters match your filters." if (band_filter or venue_filter or credit_filter or month_range_filter) else "No posters uploaded yet.")
         st.stop()
 
     # --- Thumbnail grid ---
@@ -84,7 +84,7 @@ def show_poster(poster):
         st.header(", ".join(headliners))
         if supports: st.subheader(", ".join(supports))
         if poster["EVENT_NAME"]: st.subheader(poster["EVENT_NAME"])
-        st.write(f"**Designer:** {poster['DESIGNER_NAME']}")
+        st.write(f"**Credits:** {', '.join(poster['CREDITS']) if poster['CREDITS'] else 'Unknown'}")
         st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
         st.write(f"**Venue:** {poster['VENUE_NAME']}")
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
@@ -99,7 +99,7 @@ def show_poster(poster):
 S = get_session()
 
 all_posters = get_all_posters(S)
-all_bands, all_venues, all_designers, date_min, date_max = get_poster_vars(all_posters)
+all_bands, all_venues, all_credits, date_min, date_max = get_poster_vars(all_posters)
 months = month_range(date_min, date_max)
 
 # ---------------------------------------------------------------------------
@@ -108,6 +108,6 @@ months = month_range(date_min, date_max)
 
 primary = st.get_option("theme.primaryColor")
 secondary = st.get_option("theme.secondaryBackgroundColor")
-st.subheader(f'Browse :color[{len(all_posters)} posters]{{background={primary} foreground={secondary}}} for {len(all_bands)} bands by {len(all_designers)} designers at {len(all_venues)} venues')
+st.subheader(f'Browse :color[{len(all_posters)} posters]{{background={primary} foreground={secondary}}} for {len(all_bands)} bands by {len(all_credits)} credited artists at {len(all_venues)} venues')
 
-poster_grid(all_posters, all_bands, all_venues, all_designers, months)
+poster_grid(all_posters, all_bands, all_venues, all_credits, months)
