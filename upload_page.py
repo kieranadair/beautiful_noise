@@ -75,6 +75,7 @@ with left:
         venue = st.selectbox("Venue", options=venue_options, index=venue_options.index(r["matched_venue"]) if r.get("matched_venue") in venue_options else None, accept_new_options=True, disabled=form_disabled)
         event_name = st.text_input("Event Name", value=r.get("normed_event_name", ""), placeholder="Leave empty if not a named event", disabled=form_disabled)
         credits = st.multiselect("Poster by", options=all_credits, accept_new_options=True, disabled=form_disabled, help="Designers, photographers, illustrators — anyone credited on the poster. Leave empty if unknown.")
+        no_credits_confirmed = st.checkbox("I don't know who made this poster", disabled=form_disabled)
         upload_type = st.radio("Upload type", options=["I created this poster or have the creator's permission to share it", "I'm sharing this for its historical value to the community — I don't hold the rights"], index=None, disabled=form_disabled)
         st.caption("By uploading, you agree to the [Terms of Service](/terms_of_service)")
         submitted = st.form_submit_button("Save Poster", type="primary", disabled=form_disabled, icon=":material/check:")
@@ -90,6 +91,8 @@ with left:
             errors.append("At least one band must be a headliner.")
         if not venue:
             errors.append("Please ensure the venue is filled in.")
+        if not credits and not no_credits_confirmed:
+            errors.append("Did you mean to submit without poster credits? If so, tick 'I don't know who made this poster' to confirm.")
         for e in errors:
             st.error(e)
 
