@@ -91,8 +91,11 @@ with left:
             errors.append("At least one band must be a headliner.")
         if not venue:
             errors.append("Please ensure the venue is filled in.")
-        if not credits and not no_credits_confirmed:
-            errors.append("Did you mean to submit without poster credits? If so, tick 'I don't know who made this poster' to confirm.")
+        if upload_type and not credits:
+            if upload_type.startswith("I created"):
+                errors.append("Authorised uploads require at least one poster credit — please add who made the poster.")
+            elif not no_credits_confirmed:
+                errors.append("Did you mean to submit without poster credits? If so, tick 'I don't know who made this poster' to confirm.")
         for e in errors:
             st.error(e)
 
