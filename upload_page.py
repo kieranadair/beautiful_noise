@@ -74,7 +74,7 @@ with left:
         event_date = st.date_input("Event Date", value=r.get("inferred_date"), format="DD/MM/YYYY", disabled=form_disabled)
         venue = st.selectbox("Venue", options=venue_options, index=venue_options.index(r["matched_venue"]) if r.get("matched_venue") in venue_options else None, accept_new_options=True, disabled=form_disabled)
         event_name = st.text_input("Event Name", value=r.get("normed_event_name", ""), placeholder="Leave empty if not a named event", disabled=form_disabled)
-        credits = st.multiselect("Credits", options=all_credits, accept_new_options=True, disabled=form_disabled, help="Designers, photographers, illustrators — anyone credited on the poster. Leave empty if unknown.")
+        credits = st.multiselect("Poster by", options=all_credits, accept_new_options=True, disabled=form_disabled, help="Designers, photographers, illustrators — anyone credited on the poster. Leave empty if unknown.")
         upload_type = st.radio("Upload type", options=["I created this poster or have the creator's permission to share it", "I'm sharing this for its historical value to the community — I don't hold the rights"], index=None, disabled=form_disabled)
         st.caption("By uploading, you agree to the [Terms of Service](/terms_of_service)")
         submitted = st.form_submit_button("Save Poster", type="primary", disabled=form_disabled, icon=":material/check:")

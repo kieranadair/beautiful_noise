@@ -32,12 +32,12 @@ poster_labels = {f"{p['POSTER_ID']} — {', '.join(p['BANDS'][:2])} — {p['VENU
 REQUEST_TYPES = {
     "Authorise a community upload (I'm the rights holder)": "ATTRIBUTION",
     "Request a poster takedown": "TAKEDOWN",
-    "Correct a band, venue, credit or event name": "CORRECTION",
+    "Correct a band, venue, poster credit or event name": "CORRECTION",
     "Correct the date on a poster": "DATE_CORRECTION",
     "Add/remove a band from a lineup, or change the headliner/support ordering": "LINEUP_EDIT",
 }
 
-ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Credit": "CREDIT", "Event name": "EVENT"}
+ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Poster credit": "CREDIT", "Event name": "EVENT"}
 
 GRID_COLUMNS = 5
 
@@ -84,7 +84,7 @@ if primary_poster:
             st.write(f"**Event:** {primary_poster['EVENT_NAME'] or ''}")
             st.write(f"**Venue:** {primary_poster['VENUE_NAME']}")
             st.write(f"**Date:** {primary_poster['DATE']:%d %B %Y}")
-            st.write(f"**Credits:** {', '.join(primary_poster['CREDITS']) if primary_poster['CREDITS'] else 'Unknown'}")
+            st.write(f"**Poster by:** {', '.join(primary_poster['CREDITS']) if primary_poster['CREDITS'] else 'Unknown'}")
             if primary_poster["UPLOAD_TYPE"] == "COMMUNITY":
                 st.warning("Community upload")
             st.caption(f"ID: {primary_poster['POSTER_ID']}")
@@ -129,7 +129,7 @@ if primary_poster:
 
     if request_type == "ATTRIBUTION":
 
-        st.info("Community members may upload posters they believe have cultural value to the archive. If you are a rights holder, use this form to authorise us to remove the community upload flag. To correct or add credits (designer, photographer, etc.), use the \"Correct a band, venue, credit or event name\" option instead.", icon=":material/info:")
+        st.info("Community members may upload posters they believe have cultural value to the archive. If you are a rights holder, use this form to authorise us to remove the community upload flag. To correct or add poster credits (designer, photographer, etc.), use the \"Correct a band, venue, poster credit or event name\" option instead.", icon=":material/info:")
 
         additional_labels = {l: p for l, p in poster_labels.items() if l != primary_label and p["UPLOAD_TYPE"] == "COMMUNITY"}
         add_more = st.checkbox("Add additional posters to this request", key="attribution_more")
@@ -156,7 +156,7 @@ if primary_poster:
     # -------------------------------------------------------------------
 
     if request_type == "CORRECTION":
-        st.info("Use this form to correct a misspelled or incorrect band, venue, credit, or event name. You can apply the correction to all posters or just specific ones.", icon=":material/info:")
+        st.info("Use this form to correct a misspelled or incorrect band, venue, poster credit, or event name. You can apply the correction to all posters or just specific ones.", icon=":material/info:")
 
         poster_bands = sorted(primary_poster["BANDS"])
         poster_venue = [primary_poster["VENUE_NAME"]]

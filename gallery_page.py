@@ -31,7 +31,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     month_fmt = lambda d: d.strftime("%b %Y")
     c1, c2, c3, c4 = st.columns(4)
     with c1: band_filter  = st.multiselect("Bands", options=all_bands)
-    with c2: credit_filter = st.multiselect("Credits", options=all_credits)
+    with c2: credit_filter = st.multiselect("Poster by", options=all_credits)
     with c3: venue_filter = st.multiselect("Venues", options=all_venues)
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
     headline_only = st.toggle("Headline shows only", disabled=not band_filter) if band_filter else False
@@ -84,7 +84,7 @@ def show_poster(poster):
         st.header(", ".join(headliners))
         if supports: st.subheader(", ".join(supports))
         if poster["EVENT_NAME"]: st.subheader(poster["EVENT_NAME"])
-        st.write(f"**Credits:** {', '.join(poster['CREDITS']) if poster['CREDITS'] else 'Unknown'}")
+        st.write(f"**Poster by:** {', '.join(poster['CREDITS']) if poster['CREDITS'] else 'Unknown'}")
         st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
         st.write(f"**Venue:** {poster['VENUE_NAME']}")
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
@@ -108,6 +108,6 @@ months = month_range(date_min, date_max)
 
 primary = st.get_option("theme.primaryColor")
 secondary = st.get_option("theme.secondaryBackgroundColor")
-st.subheader(f'Browse :color[{len(all_posters)} posters]{{background={primary} foreground={secondary}}} for {len(all_bands)} bands by {len(all_credits)} credited artists at {len(all_venues)} venues')
+st.subheader(f'Browse :color[{len(all_posters)} posters]{{background={primary} foreground={secondary}}} for {len(all_bands)} bands by {len(all_credits)} creators at {len(all_venues)} venues')
 
 poster_grid(all_posters, all_bands, all_venues, all_credits, months)
