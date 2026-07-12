@@ -84,12 +84,12 @@ def show_poster(poster):
         st.header(", ".join(headliners))
         if supports: st.subheader(", ".join(supports))
         if poster["EVENT_NAME"]: st.subheader(poster["EVENT_NAME"])
-        st.write(f"**Poster by:** {', '.join(poster['CREDITS']) if poster['CREDITS'] else 'Unknown'}")
-        st.write(f"**Date:** {poster['DATE']:%d %B %Y}")
+        st.write(f"**Poster by:** {', '.join(poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
+        st.write(f"**Date:** {poster['DATE'].strftime('%d %B %Y').upper()}")
         st.write(f"**Venue:** {poster['VENUE_NAME']}")
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
         st.space(size="medium")
-        if poster["UPLOAD_TYPE"] == "COMMUNITY": st.warning("Community upload: if you are the rights holder and would like it attributed or removed please submit a request.", icon=":material/info:")
+        if poster["UPLOAD_TYPE"] == "COMMUNITY": st.warning("Community upload: if you are the rights holder and would like attribution amended or for the poster to be removed, please submit a request.", icon=":material/info:")
         st.page_link("contact_page.py", label="Submit a correction or request", icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
 
 # ---------------------------------------------------------------------------
