@@ -20,6 +20,11 @@ GALLERY_COLUMNS = 5
 ss = st.session_state
 if "limit" not in ss: ss["limit"] = (GALLERY_COLUMNS * 3)
 
+COMMUNITY_HELP = (
+    "This was submitted as a community upload. If you are the rights holder and would "
+    "like it removed or amended, please submit a correction or request."
+)
+
 # ---------------------------------------------------------------------------
 # Fragment: poster grid (filters, thumbnails, pagination)
 # ---------------------------------------------------------------------------
@@ -35,8 +40,9 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     with c3: venue_filter = st.multiselect("Venues", options=all_venues)
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
     headline_only = st.toggle("Headline shows only", disabled=not band_filter) if band_filter else False
+    show_community = st.toggle("Show community uploads", value=True, help="Hide posters submitted by the community (not the rights holder).")
 
-    filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, credit_filter, month_range_filter, headline_only)
+    filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, credit_filter, month_range_filter, headline_only, show_community)
 
     st.divider()
 
@@ -49,6 +55,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     visible_posters = filtered_posters[:ss["limit"]]
 
     st.caption(":material/visibility: Click the eye to view poster details")
+    st.caption(":material/groups: Community upload")
     st.space("small")
 
     for row_start in range(0, len(visible_posters), GALLERY_COLUMNS):
@@ -59,7 +66,10 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
                 o = visible_posters[idx]
                 with c.container():
                     st.image(o["URL"])
-                    if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}"): show_poster(o)
+                    with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+                        if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}"): show_poster(o)
+                        if o["UPLOAD_TYPE"] == "COMMUNITY":
+                            st.badge("", icon=":material/groups:", color="gray", help=COMMUNITY_HELP)
         st.space("small")
 
     # --- Pagination ---
@@ -89,7 +99,7 @@ def show_poster(poster):
         st.write(f"**Venue:** {poster['VENUE_NAME']}")
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
         st.space(size="medium")
-        if poster["UPLOAD_TYPE"] == "COMMUNITY": st.warning("Community upload: if you are the rights holder and would like attribution amended or for the poster to be removed, please submit a request.", icon=":material/info:")
+        if poster["UPLOAD_TYPE"] == "COMMUNITY": st.badge("Community upload", icon=":material/groups:", color="gray", help=COMMUNITY_HELP)
         st.page_link("contact_page.py", label="Submit a correction or request", icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
 
 # ---------------------------------------------------------------------------

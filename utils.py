@@ -71,9 +71,10 @@ def heic_to_image_bytes(file: BytesIO) -> BytesIO:
     buf.seek(0)
     return buf
 
-def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None = None, venue_filter: list[str] | None = None, credit_filter: list[str] | None = None, month_range: tuple | None = None, headline_only: bool = False) -> list[dict]:
+def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None = None, venue_filter: list[str] | None = None, credit_filter: list[str] | None = None, month_range: tuple | None = None, headline_only: bool = False, show_community: bool = True) -> list[dict]:
     """Filter cached poster list in Python by bands, venues, credits, month range, and headliner flag.
     When headline_only is True and bands are filtered, only matches bands that appear as headliners.
+    When show_community is False, community-uploaded posters are excluded.
     All filtering is done client-side on the cached result, not in Snowflake."""
     posters = all_posters
     if band_filter:
@@ -90,6 +91,8 @@ def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None 
         posters = [p for p in posters if any(c in credit_set for c in p["CREDITS"])]
     if month_range:
         posters = [p for p in posters if month_range[0] <= p["DATE"].replace(day=1) <= month_range[1]]
+    if not show_community:
+        posters = [p for p in posters if p["UPLOAD_TYPE"] != "COMMUNITY"]
     return posters
 
 def get_poster_vars(all_posters: list[dict]) -> tuple[list[str], list[str], list[str], date, date]:
