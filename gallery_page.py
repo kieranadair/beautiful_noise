@@ -40,7 +40,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     with c3: venue_filter = st.multiselect("Venues", options=all_venues)
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
     headline_only = st.toggle("Headline shows only", disabled=not band_filter) if band_filter else False
-    show_community = st.toggle("Show community uploads", value=True, help="Shared by community members for historic value without permission from rights holder")
+    show_community = st.toggle(":material/groups: Show community uploads", value=True, help="Shared by community members for historic value without permission from rights holder")
 
     filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, credit_filter, month_range_filter, headline_only, show_community)
 
@@ -54,9 +54,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     # --- Thumbnail grid ---
     visible_posters = filtered_posters[:ss["limit"]]
 
-    with st.container(horizontal=True, gap="medium"):
-        st.caption(":material/visibility: Click the eye to view poster details")
-        st.caption(":material/groups: Community upload")
+    st.caption(":material/visibility: Click the eye to view poster details")
     st.space("small")
 
     for row_start in range(0, len(visible_posters), GALLERY_COLUMNS):
