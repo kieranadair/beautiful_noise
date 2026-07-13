@@ -23,7 +23,7 @@ st.write(f':color[BEAUTIFUL]{{foreground={primary}}}NOISE :color[| GIG POSTER AR
 # Header content
 st.title(f"I took a walk down :color[memory lane...]{{foreground={primary}}}")
 text = """
-**Beautiful Noise** is a living, community-driven archive of posters from Naarm's live music scene — it's aim is to capture and preserve the vibrancy, creativity, and magic behind this art.
+**Beautiful Noise** is a living, community-driven archive of posters from Narrm's live music scene — it's aim is to capture and preserve the vibrancy, creativity, and magic behind this art.
 
 Every week, new gig posters decorate this city's streets — bold, strange, and beautiful — born from the same underground talent that fills its stages. They are the visual pulse of our scene, and reflect the talent and diversity of the bands they promote.
 
@@ -44,6 +44,6 @@ def show_faq():
 # Footer setion
 st.space("small")
 with st.container(horizontal=True, vertical_alignment="center", gap="small"):
-    if st.button("FAQ", icon=":material/help:", type="tertiary"):
+    if st.button("Learn more about Beautiful Noise", icon=":material/help:", type="tertiary"):
         show_faq()
     st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/contact_page).")

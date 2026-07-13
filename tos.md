@@ -4,7 +4,7 @@ Last Updated: [DATE]
 
 ### The Short Version
 
-Beautiful Noise is a community-driven archive of gig posters from Naarm's live music scene. You keep the rights to anything you upload, and can request removal at any time. By uploading, you give us permission to display it in the archive. Visitors may share and reference archive content with attribution, but may not use it for commercial purposes. Please only upload posters you have the right to share.
+Beautiful Noise is a community-driven archive of gig posters from Narrm's live music scene. You keep the rights to anything you upload, and can request removal at any time. By uploading, you give us permission to display it in the archive. Visitors may share and reference archive content with attribution, but may not use it for commercial purposes. Please only upload posters you have the right to share.
 
 ---
 
@@ -14,7 +14,7 @@ By accessing or using Beautiful Noise ("the Service"), you agree to be bound by 
 
 ### 2. What We Do
 
-Beautiful Noise is a living, community-driven archive of posters from Naarm's live music scene. Our aim is to capture and preserve the vibrancy, creativity, and magic behind this art. We provide a platform for users to upload, browse, and celebrate gig poster artwork.
+Beautiful Noise is a living, community-driven archive of posters from Narrm's live music scene. Our aim is to capture and preserve the vibrancy, creativity, and magic behind this art. We provide a platform for users to upload, browse, and celebrate gig poster artwork.
 
 ### 3. Your Content
 
@@ -27,11 +27,11 @@ By uploading content, you grant Beautiful Noise a non-exclusive, royalty-free, w
 #### Your responsibility
 By uploading a poster, you confirm that at least one of the following applies:
 - You are the creator of the work, **or** you have permission from the creator to share it
-- You are uploading the poster in good faith for its historical or cultural significance to Naarm's live music community, and you acknowledge that the original creator may request removal at any time
+- You are uploading the poster in good faith for its historical or cultural significance to Narrm's live music community, and you acknowledge that the original creator may request removal at any time
 
 In all cases, you also confirm that:
 - The content does not infringe on any third party's rights to the best of your knowledge
-- The content is a genuine gig poster or related promotional material from Naarm's live music scene
+- The content is a genuine gig poster or related promotional material from Narrm's live music scene
 
 #### What you must not upload
 - Content that is illegal, defamatory, or fraudulent
