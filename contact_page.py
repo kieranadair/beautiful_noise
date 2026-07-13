@@ -39,6 +39,11 @@ REQUEST_TYPES = {
 
 ENTITY_TYPES = {"Band": "BAND", "Venue": "VENUE", "Poster credit": "CREDIT", "Event name": "EVENT"}
 
+# Shared tail for every submission-success banner. We don't collect contact
+# details (no email/PII), so this sets expectations: review is manual and the
+# only way to see the outcome is to check the gallery.
+REVIEW_NOTICE = "Requests are reviewed by hand (usually within a few days) and approved changes appear in the gallery automatically. We don't collect contact details, so check back in the gallery to see the update."
+
 GRID_COLUMNS = 5
 
 def poster_picker(labels, key="default", help_text="Search by poster id, band, venue and date", pinned=None):
@@ -57,7 +62,7 @@ def poster_picker(labels, key="default", help_text="Search by poster id, band, v
 # ---------------------------------------------------------------------------
 
 st.subheader("Submit a request")
-st.write("Use this form to submit corrections, attribution requests, or takedown notices. All requests are reviewed by an admin before any changes are made.")
+st.write("Use this form to submit corrections, attribution requests, or takedown notices. There's no sign-in and we don't collect contact details — every request is reviewed by hand before any change is made, and approved changes appear in the gallery automatically.")
 
 if "request_submitted" in st.session_state:
     st.success(st.session_state.pop("request_submitted"))
@@ -119,7 +124,7 @@ if primary_poster:
         if submit and not permission: st.error("You must be a rights holder to submit a takedown request.")
         elif submit:
             save_request(S, request_type="TAKEDOWN", entity_type="POSTER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
-            st.session_state["request_submitted"] = "Takedown request submitted. It will be reviewed by an admin."
+            st.session_state["request_submitted"] = f"Takedown request submitted. {REVIEW_NOTICE}"
             st.query_params.clear()
             st.rerun()
 
@@ -147,7 +152,7 @@ if primary_poster:
         if submit and not permission: st.error("You must be a rights holder to submit an attribution request.")
         elif submit:
             save_request(S, request_type="ATTRIBUTION", entity_type="DESIGNER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
-            st.session_state["request_submitted"] = "Attribution request submitted. It will be reviewed by an admin."
+            st.session_state["request_submitted"] = f"Attribution request submitted. {REVIEW_NOTICE}"
             st.query_params.clear()
             st.rerun()
 
@@ -181,7 +186,7 @@ if primary_poster:
             if submit and not corrected_value: st.error("Please enter a corrected value.")
             elif submit:
                 save_request(S, request_type="CORRECTION", entity_type="EVENT", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=normalise(current_value) if current_value else None, requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
-                st.session_state["request_submitted"] = "Correction request submitted. It will be reviewed by an admin."
+                st.session_state["request_submitted"] = f"Correction request submitted. {REVIEW_NOTICE}"
                 st.query_params.clear()
                 st.rerun()
 
@@ -241,7 +246,7 @@ if primary_poster:
                 elif submit and scope == "SPECIFIC" and not poster_ids: st.error("Please select at least one poster.")
                 elif submit:
                     save_request(S, request_type="CORRECTION", entity_type=entity_type, scope=scope, poster_ids=poster_ids, current_value=normalise(current_value), requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
-                    st.session_state["request_submitted"] = "Correction request submitted. It will be reviewed by an admin."
+                    st.session_state["request_submitted"] = f"Correction request submitted. {REVIEW_NOTICE}"
                     st.query_params.clear()
                     st.rerun()
 
@@ -265,7 +270,7 @@ if primary_poster:
         if submit and corrected_date == current_date: st.error("The corrected date is the same as the current date.")
         elif submit:
             save_request(S, request_type="CORRECTION", entity_type="DATE", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=str(current_date) if current_date else None, requested_value=str(corrected_date), notes=notes.strip() if notes and notes.strip() else None)
-            st.session_state["request_submitted"] = "Date correction submitted. It will be reviewed by an admin."
+            st.session_state["request_submitted"] = f"Date correction submitted. {REVIEW_NOTICE}"
             st.query_params.clear()
             st.rerun()
 
@@ -352,6 +357,6 @@ if primary_poster:
                         notes=notes.strip() if notes and notes.strip() else None
                     )
     
-                    st.session_state["request_submitted"] = "Lineup edit request submitted. It will be reviewed by an admin."
+                    st.session_state["request_submitted"] = f"Lineup edit request submitted. {REVIEW_NOTICE}"
                     st.query_params.clear()
                     st.rerun()
