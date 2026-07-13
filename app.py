@@ -1,5 +1,4 @@
 import streamlit as st
-from config import NAV_BTN_WIDTH
 
 
 st.set_page_config(layout="wide", page_title="Beautiful Noise", page_icon=":material/music_note:", initial_sidebar_state="collapsed")
@@ -44,6 +43,7 @@ def show_faq():
 
 # Footer setion
 st.space("small")
-if st.button("FAQ", icon=":material/help:", width=NAV_BTN_WIDTH):
-    show_faq()
-st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/contact_page).")
+with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+    if st.button("FAQ", icon=":material/help:", type="tertiary"):
+        show_faq()
+    st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/contact_page).")
