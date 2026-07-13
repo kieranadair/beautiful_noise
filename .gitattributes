@@ -1,0 +1,21 @@
+# Line-ending policy for Beautiful Noise.
+#
+# The repository stores all text as LF, and because the app deploys to Linux
+# (Streamlit Community Cloud), we also check out LF in the working tree — even
+# on Windows. Pinning eol=lf means Git never converts CRLF<->LF, which keeps
+# line endings consistent and silences the "LF will be replaced by CRLF" warning.
+* text=auto eol=lf
+
+# Explicit rules for the text types in this repo (belt and braces).
+*.py    text eol=lf
+*.md    text eol=lf
+*.toml  text eol=lf
+*.txt   text eol=lf
+
+# Binary assets — never apply line-ending conversion (defensive; none tracked yet).
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.pdf   binary
+*.ico   binary
