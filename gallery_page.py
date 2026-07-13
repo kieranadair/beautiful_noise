@@ -43,7 +43,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     month_fmt = lambda d: d.strftime("%b %Y")
     c1, c2, c3, c4 = st.columns(4)
     with c1: band_filter  = st.multiselect("Bands", options=all_bands)
-    with c2: credit_filter = st.multiselect("Poster by", options=all_credits)
+    with c2: credit_filter = st.multiselect("Poster By", options=all_credits)
     with c3: venue_filter = st.multiselect("Venues", options=all_venues)
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
     headline_only = st.toggle("Headline shows only", disabled=not band_filter) if band_filter else False

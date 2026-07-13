@@ -84,7 +84,7 @@ if primary_poster:
             st.write(f"**Event:** {md_escape(primary_poster['EVENT_NAME']) if primary_poster['EVENT_NAME'] else ''}")
             st.write(f"**Venue:** {md_escape(primary_poster['VENUE_NAME'])}")
             st.write(f"**Date:** {primary_poster['DATE']:%d %B %Y}")
-            st.write(f"**Poster by:** {', '.join(md_escape(x) for x in primary_poster['CREDITS']) if primary_poster['CREDITS'] else 'Unknown'}")
+            st.write(f"**Poster By:** {', '.join(md_escape(x) for x in primary_poster['CREDITS']) if primary_poster['CREDITS'] else 'Unknown'}")
             if primary_poster["UPLOAD_TYPE"] == "COMMUNITY":
                 st.warning("Community upload")
             st.caption(f"ID: {primary_poster['POSTER_ID']}")
