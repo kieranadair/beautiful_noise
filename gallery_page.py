@@ -41,19 +41,19 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
     headline_only = st.toggle("Headline shows only", disabled=not band_filter) if band_filter else False
     # Community filter — a single-select pill acting as a show/hide toggle.
-    # Streamlit pills have no per-widget colour and no stable "selected" CSS hook, so we
-    # colour it ourselves: wrap it in a keyed container (exposed as `.st-key-community-filter`)
-    # and inject scoped CSS whose greys follow the Python on/off state. Off = lighter than the
-    # page background so the control recedes; on = a slightly darker muted grey. A visible
-    # label gives the `help` tooltip its (?) anchor; the pill itself stays icon-only.
+    # The label is a single space so the `help` (?) still renders above the pill while the
+    # icon + text live inside it. Streamlit pills have no per-widget colour, so we scope CSS
+    # to the keyed container (`.st-key-community-filter`): the unselected pill is a muted grey
+    # (lighter than the page background, so it recedes) and the selected pill keeps the theme
+    # red but dimmed via opacity — Streamlit tags the selected button's testid ...Active.
     with st.container(key="community-filter"):
-        _sel = st.pills("Show community uploads", options=["community"], default="community", key="community_pills", format_func=lambda o: ":material/groups:", help="Shared by community members for historic value without permission from rights holder")
+        _sel = st.pills(" ", options=["community"], default="community", key="community_pills", format_func=lambda o: ":material/groups: Show community uploads", help="These are posters submitted by members of the community for historic value, but not explicitly shared by the rights holder.")
     show_community = _sel is not None
-    _bg, _bd, _fg = ("#e3e3e3", "#d0d0d0", "#444444") if show_community else ("#f7f7f7", "#e9e9e9", "#b0b0b0")
     st.html(
         "<style>"
-        f".st-key-community-filter [data-testid='stBaseButton-pills']{{background:{_bg}!important;border-color:{_bd}!important;color:{_fg}!important;}}"
-        f".st-key-community-filter [data-testid='stBaseButton-pills']:hover{{background:{_bd}!important;border-color:{_bd}!important;color:{_fg}!important;}}"
+        ".st-key-community-filter [data-testid='stBaseButton-pills']{background:#f7f7f7!important;border-color:#e9e9e9!important;color:#b0b0b0!important;}"
+        ".st-key-community-filter [data-testid='stBaseButton-pills']:hover{background:#efefef!important;border-color:#e0e0e0!important;}"
+        ".st-key-community-filter [data-testid$='Active']{opacity:0.7!important;}"
         "</style>"
     )
 
