@@ -88,9 +88,9 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
                 with c.container():
                     st.image(o["URL"])
                     with st.container(horizontal=True, vertical_alignment="center", gap="small"):
-                        if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}"): show_poster(o)
+                        if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}", help="View"): show_poster(o)
                         if o["UPLOAD_TYPE"] == "COMMUNITY":
-                            st.markdown(":material/groups:")
+                            st.markdown(":material/groups:", help="Community upload")
         st.space("small")
 
     # --- Pagination ---
@@ -118,10 +118,10 @@ def show_poster(poster):
         st.write(f"**Poster by:** {', '.join(md_escape(c) for c in poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
         st.write(f"**Date:** {poster['DATE'].strftime('%d %B %Y').upper()}")
         st.write(f"**Venue:** {md_escape(poster['VENUE_NAME'])}")
+        if poster["UPLOAD_TYPE"] == "COMMUNITY": st.badge("Community upload", icon=":material/groups:", color="yellow", help=COMMUNITY_HELP)
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
         st.space(size="medium")
         st.page_link("contact_page.py", label="Submit a correction or request removal", icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
-        if poster["UPLOAD_TYPE"] == "COMMUNITY": st.badge("Community upload", icon=":material/groups:", color="yellow", help=COMMUNITY_HELP)
 
 # ---------------------------------------------------------------------------
 # Data: poster cache, filter options, date range
