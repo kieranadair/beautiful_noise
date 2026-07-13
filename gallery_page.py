@@ -25,6 +25,13 @@ COMMUNITY_HELP = (
     "like it removed or amended, please submit a correction or request."
 )
 
+# Explainer for what a community upload is — parked here for a future FAQ page, since the
+# gallery filter no longer surfaces it as a tooltip.
+COMMUNITY_UPLOAD_EXPLAINER = (
+    "These are posters submitted by members of the community for historic value, but not "
+    "explicitly shared by the rights holder."
+)
+
 # ---------------------------------------------------------------------------
 # Fragment: poster grid (filters, thumbnails, pagination)
 # ---------------------------------------------------------------------------
@@ -40,14 +47,14 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     with c3: venue_filter = st.multiselect("Venues", options=all_venues)
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
     headline_only = st.toggle("Headline shows only", disabled=not band_filter) if band_filter else False
-    # Community filter — a single-select pill acting as a show/hide toggle.
-    # The label is a single space so the `help` (?) still renders above the pill while the
-    # icon + text live inside it. Streamlit pills have no per-widget colour, so we scope CSS
+    # Community filter — a single-select pill acting as a show/hide toggle. The label is
+    # hidden (a fuller explanation will live on a future FAQ page — see
+    # COMMUNITY_UPLOAD_EXPLAINER). Streamlit pills have no per-widget colour, so we scope CSS
     # to the keyed container (`.st-key-community-filter`): the unselected pill is a muted grey
     # (lighter than the page background, so it recedes) and the selected pill keeps the theme
     # red but dimmed via opacity — Streamlit tags the selected button's testid ...Active.
     with st.container(key="community-filter"):
-        _sel = st.pills(" ", options=["community"], default="community", key="community_pills", format_func=lambda o: ":material/groups: Show community uploads", help="These are posters submitted by members of the community for historic value, but not explicitly shared by the rights holder.")
+        _sel = st.pills("Show community uploads", options=["community"], default="community", key="community_pills", format_func=lambda o: ":material/groups: Show community uploads", label_visibility="collapsed")
     show_community = _sel is not None
     st.html(
         "<style>"
