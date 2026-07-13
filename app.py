@@ -21,15 +21,6 @@ primary = st.get_option("theme.primaryColor")
 secondary = st.get_option("theme.linkColor")
 st.write(f':color[BEAUTIFUL]{{foreground={primary}}}NOISE :color[| GIG POSTER ARCHIVE]{{foreground={secondary}}}')
 
-# Primary navigation (global; the button for the page you're already on is hidden)
-with st.container(horizontal=True):
-    if pg.url_path != upload.url_path:
-        if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
-            st.switch_page("upload_page.py")
-    if pg.url_path != gallery.url_path:
-        if st.button("VIEW GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
-            st.switch_page("gallery_page.py")
-
 # Header content
 st.title(f"I took a walk down :color[memory lane...]{{foreground={primary}}}")
 text = """
@@ -43,18 +34,16 @@ This project exists to change that. To pull these works off the street (and away
 """
 st.write(text)
 
-# FAQ (opens a dialog; sits where the per-page nav buttons used to live)
+# Run pages
+pg.run()
+
+# FAQ (light, conversational help — opens a dialog from the footer)
 @st.dialog("Frequently Asked Questions", width="large")
 def show_faq():
     st.write(open("faq.md").read())
 
-if st.button("FAQ", icon=":material/help:", width=NAV_BTN_WIDTH):
-    show_faq()
-st.divider()
-
-# Run pages
-pg.run()
-
 # Footer setion
 st.space("small")
+if st.button("FAQ", icon=":material/help:", width=NAV_BTN_WIDTH):
+    show_faq()
 st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/contact_page).")

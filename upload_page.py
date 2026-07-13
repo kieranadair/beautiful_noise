@@ -2,10 +2,19 @@ import hashlib
 from pathlib import Path
 from io import BytesIO
 import streamlit as st
-from config import STAGE
+from config import STAGE, NAV_BTN_WIDTH
 from db import get_session, get_all_posters, save_poster, upload_to_stage, log_processed
 from ai import run_extraction, is_valid_poster, parse_extraction
 from utils import normalise, fuzzy_match, infer_date, preprocess_image, pdf_to_image_bytes, ImageRejected, get_poster_vars, prepare_review_defaults, prepare_save_data, check_duplicate_md5, check_semantic_duplicate
+
+# ---------------------------------------------------------------------------
+# Navigation
+# ---------------------------------------------------------------------------
+
+if st.button("VIEW GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
+    st.switch_page("gallery_page.py")
+
+st.divider()
 
 # ---------------------------------------------------------------------------
 # Helpers & session state

@@ -4,6 +4,15 @@ from db import get_session, get_all_posters
 from utils import get_filtered_posters, get_poster_vars, month_range, md_escape
 
 # ---------------------------------------------------------------------------
+# Navigation
+# ---------------------------------------------------------------------------
+
+if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
+    st.switch_page("upload_page.py")
+
+st.divider()
+
+# ---------------------------------------------------------------------------
 # Constants & session state
 # ---------------------------------------------------------------------------
 
