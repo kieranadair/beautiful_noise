@@ -40,7 +40,22 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     with c3: venue_filter = st.multiselect("Venues", options=all_venues)
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
     headline_only = st.toggle("Headline shows only", disabled=not band_filter) if band_filter else False
-    show_community = st.pills("Community uploads filter", options=["community"], default="community", format_func=lambda o: ":material/groups: Show community uploads", label_visibility="collapsed", help="Shared by community members for historic value without permission from rights holder") is not None
+    # Community filter — a single-select pill acting as a show/hide toggle.
+    # Streamlit pills have no per-widget colour and no stable "selected" CSS hook, so we
+    # colour it ourselves: wrap it in a keyed container (exposed as `.st-key-community-filter`)
+    # and inject scoped CSS whose greys follow the Python on/off state. Off = lighter than the
+    # page background so the control recedes; on = a slightly darker muted grey. A visible
+    # label gives the `help` tooltip its (?) anchor; the pill itself stays icon-only.
+    with st.container(key="community-filter"):
+        _sel = st.pills("Show community uploads", options=["community"], default="community", key="community_pills", format_func=lambda o: ":material/groups:", help="Shared by community members for historic value without permission from rights holder")
+    show_community = _sel is not None
+    _bg, _bd, _fg = ("#e3e3e3", "#d0d0d0", "#444444") if show_community else ("#f7f7f7", "#e9e9e9", "#b0b0b0")
+    st.html(
+        "<style>"
+        f".st-key-community-filter [data-testid='stBaseButton-pills']{{background:{_bg}!important;border-color:{_bd}!important;color:{_fg}!important;}}"
+        f".st-key-community-filter [data-testid='stBaseButton-pills']:hover{{background:{_bd}!important;border-color:{_bd}!important;color:{_fg}!important;}}"
+        "</style>"
+    )
 
     filtered_posters = get_filtered_posters(all_posters, band_filter, venue_filter, credit_filter, month_range_filter, headline_only, show_community)
 
