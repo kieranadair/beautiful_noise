@@ -90,7 +90,10 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
                     with st.container(horizontal=True, vertical_alignment="center", gap="small"):
                         if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}", help="View"): show_poster(o)
                         if o["UPLOAD_TYPE"] == "COMMUNITY":
-                            st.markdown(":material/groups:", help="Community upload")
+                            # Rendered as a (non-acting) tertiary button, not st.markdown, so the
+                            # tooltip attaches directly to the icon on hover — matching the eye
+                            # button above. st.markdown's `help` renders a separate (?) circle instead.
+                            st.button(" ", type="tertiary", icon=":material/groups:", key=f"community_{o['POSTER_ID']}", help="Community upload")
         st.space("small")
 
     # --- Pagination ---
