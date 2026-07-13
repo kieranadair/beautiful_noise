@@ -1,4 +1,5 @@
 import streamlit as st
+from config import NAV_BTN_WIDTH
 
 
 st.set_page_config(layout="wide", page_title="Beautiful Noise", page_icon=":material/music_note:", initial_sidebar_state="collapsed")
@@ -20,6 +21,15 @@ primary = st.get_option("theme.primaryColor")
 secondary = st.get_option("theme.linkColor")
 st.write(f':color[BEAUTIFUL]{{foreground={primary}}}NOISE :color[| GIG POSTER ARCHIVE]{{foreground={secondary}}}')
 
+# Primary navigation (global; the button for the page you're already on is hidden)
+with st.container(horizontal=True):
+    if pg.url_path != upload.url_path:
+        if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
+            st.switch_page("upload_page.py")
+    if pg.url_path != gallery.url_path:
+        if st.button("VIEW GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
+            st.switch_page("gallery_page.py")
+
 # Header content
 st.title(f"I took a walk down :color[memory lane...]{{foreground={primary}}}")
 text = """
@@ -32,6 +42,15 @@ But posters are ephemeral by nature. Torn down, pasted over, lost to time once t
 This project exists to change that. To pull these works off the street (and away from the mercy of the algorithm) and into an independent archive that endures. A place where this art can be preserved, celebrated, and given the recognition it deserves — not just for now, but for everyone who comes after.
 """
 st.write(text)
+
+# FAQ (opens a dialog; sits where the per-page nav buttons used to live)
+@st.dialog("Frequently Asked Questions", width="large")
+def show_faq():
+    st.write(open("faq.md").read())
+
+if st.button("FAQ", icon=":material/help:", width=NAV_BTN_WIDTH):
+    show_faq()
+st.divider()
 
 # Run pages
 pg.run()
