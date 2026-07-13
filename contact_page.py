@@ -2,7 +2,7 @@ import json
 import streamlit as st
 from config import NAV_BTN_WIDTH
 from db import get_session, get_all_posters, save_request
-from utils import get_poster_vars, normalise, poster_has
+from utils import get_poster_vars, normalise, poster_has, md_escape
 
 # ---------------------------------------------------------------------------
 # Navigation (two buttons side by side)
@@ -79,12 +79,12 @@ if primary_poster:
         with img_col:
             st.image(primary_poster["URL"])
         with detail_col:
-            st.write(f"**Headliners:** {', '.join(primary_poster['HEADLINERS'])}")
-            st.write(f"**Supports:** {', '.join(primary_poster['SUPPORTS']) if primary_poster['SUPPORTS'] else ''}")
-            st.write(f"**Event:** {primary_poster['EVENT_NAME'] or ''}")
-            st.write(f"**Venue:** {primary_poster['VENUE_NAME']}")
+            st.write(f"**Headliners:** {', '.join(md_escape(x) for x in primary_poster['HEADLINERS'])}")
+            st.write(f"**Supports:** {', '.join(md_escape(x) for x in primary_poster['SUPPORTS']) if primary_poster['SUPPORTS'] else ''}")
+            st.write(f"**Event:** {md_escape(primary_poster['EVENT_NAME']) if primary_poster['EVENT_NAME'] else ''}")
+            st.write(f"**Venue:** {md_escape(primary_poster['VENUE_NAME'])}")
             st.write(f"**Date:** {primary_poster['DATE']:%d %B %Y}")
-            st.write(f"**Poster by:** {', '.join(primary_poster['CREDITS']) if primary_poster['CREDITS'] else 'Unknown'}")
+            st.write(f"**Poster by:** {', '.join(md_escape(x) for x in primary_poster['CREDITS']) if primary_poster['CREDITS'] else 'Unknown'}")
             if primary_poster["UPLOAD_TYPE"] == "COMMUNITY":
                 st.warning("Community upload")
             st.caption(f"ID: {primary_poster['POSTER_ID']}")
@@ -170,7 +170,7 @@ if primary_poster:
 
         if entity_type == "EVENT":
             current_value = primary_poster.get("EVENT_NAME") or ""
-            st.write(f"Current event name: **{current_value}**" if current_value else "This poster has no event name set.")
+            st.write(f"Current event name: **{md_escape(current_value)}**" if current_value else "This poster has no event name set.")
 
             corrected_value = st.text_input("Correct event name", placeholder="Enter the correct event name")
 
@@ -190,13 +190,13 @@ if primary_poster:
                 current_value = st.selectbox(f"Which {entity_label.lower()}?", options=scoped_options, index=None)
             else:
                 current_value = scoped_options[0] if scoped_options else None
-                st.write(f"**{entity_label}:** {current_value}")
+                st.write(f"**{entity_label}:** {md_escape(current_value)}")
 
             if current_value:
                 additional_count = sum(1 for p in all_posters if poster_has(p, entity_type, current_value)) - 1
 
                 if additional_count > 0:
-                    st.info(f"There {'is' if additional_count == 1 else 'are'} {additional_count} additional poster{'s' if additional_count != 1 else ''} with **{current_value}** in the archive.")
+                    st.info(f"There {'is' if additional_count == 1 else 'are'} {additional_count} additional poster{'s' if additional_count != 1 else ''} with **{md_escape(current_value)}** in the archive.")
 
                     scope_options = ["Only change this poster", f"Select additional posters that mention {current_value}", f"Change all posters that mention {current_value}"]
                     scope_label = st.radio("How should this be applied?", options=scope_options)
@@ -218,7 +218,7 @@ if primary_poster:
                 else:
                     scope_label = None
 
-                corrected_value = st.selectbox(f"What should **{current_value}** be changed to?", options=[o for o in full_options if o != current_value], index=None, accept_new_options=True, placeholder="Select existing or type a new name")
+                corrected_value = st.selectbox(f"What should **{md_escape(current_value)}** be changed to?", options=[o for o in full_options if o != current_value], index=None, accept_new_options=True, placeholder="Select existing or type a new name")
 
                 notes = st.text_area("Notes (optional)", placeholder="Any extra context that might help", key="correction_notes")
 
@@ -319,7 +319,7 @@ if primary_poster:
             overlap = set(headliners_n) & set(supports_n)
     
             if overlap:
-                st.error(f"These bands appear in both lists: {', '.join(sorted(overlap))}. Please fix before submitting.")
+                st.error(f"These bands appear in both lists: {', '.join(md_escape(b) for b in sorted(overlap))}. Please fix before submitting.")
     
             elif not headliners_n:
                 st.error("At least one band must be a headliner.")

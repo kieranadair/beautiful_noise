@@ -4,6 +4,10 @@
 
 [server]
 enableStaticServing = true
+# Front-door cap on upload size (MB), enforced before bytes reach Python. A
+# gig poster is well under this; it exists to shrink the attack surface for
+# oversized-file floods / decode bombs on the anonymous upload endpoint.
+maxUploadSize = 25
 
 [theme]
 base = "light"

@@ -1,7 +1,7 @@
 import streamlit as st
 from config import NAV_BTN_WIDTH
 from db import get_session, get_all_posters
-from utils import get_filtered_posters, get_poster_vars, month_range
+from utils import get_filtered_posters, get_poster_vars, month_range, md_escape
 
 # ---------------------------------------------------------------------------
 # Navigation
@@ -112,12 +112,12 @@ def show_poster(poster):
     with right:
         headliners = poster["HEADLINERS"] if poster["HEADLINERS"] else poster["BANDS"]
         supports = poster["SUPPORTS"] if poster["HEADLINERS"] else []
-        st.header(", ".join(headliners))
-        if supports: st.subheader(", ".join(supports))
-        if poster["EVENT_NAME"]: st.subheader(poster["EVENT_NAME"])
-        st.write(f"**Poster by:** {', '.join(poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
+        st.header(", ".join(md_escape(h) for h in headliners))
+        if supports: st.subheader(", ".join(md_escape(s) for s in supports))
+        if poster["EVENT_NAME"]: st.subheader(md_escape(poster["EVENT_NAME"]))
+        st.write(f"**Poster by:** {', '.join(md_escape(c) for c in poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
         st.write(f"**Date:** {poster['DATE'].strftime('%d %B %Y').upper()}")
-        st.write(f"**Venue:** {poster['VENUE_NAME']}")
+        st.write(f"**Venue:** {md_escape(poster['VENUE_NAME'])}")
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
         st.space(size="medium")
         st.page_link("contact_page.py", label="Submit a correction or request removal", icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})

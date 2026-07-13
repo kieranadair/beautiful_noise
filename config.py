@@ -12,3 +12,19 @@ MODEL = "llama4-maverick"
 IMG_FORMAT = "JPEG"
 NAV_BTN_WIDTH = 220
 
+# --- Image ingestion hardening (see security review / plan) ---------------
+# Decode-time ceiling on pixel count. ~40 MP comfortably allows large phone
+# photos and scans (a 12 MP iPhone shot is fine) while blocking decompression
+# "pixel bombs" — small files that decode to enormous dimensions and exhaust
+# memory. The final stored image is only 1200 px on its longest side, so this
+# is purely a guard on the *input*, not a quality limit.
+MAX_IMAGE_PIXELS = 40_000_000
+# DPI used to rasterise the first page of an uploaded PDF. Clamped down at
+# runtime if a page is large enough that rendering at this DPI would exceed
+# MAX_IMAGE_PIXELS (see pdf_to_image_bytes).
+PDF_RENDER_DPI = 150
+# PIL .format values we accept. The file_uploader type= list is only an
+# extension hint — PIL decodes by magic bytes, so this content-based allowlist
+# is what actually constrains which codecs run on untrusted input.
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
+
