@@ -115,7 +115,7 @@ def show_poster(poster):
         st.header(", ".join(md_escape(h) for h in headliners))
         if supports: st.subheader(", ".join(md_escape(s) for s in supports))
         if poster["EVENT_NAME"]: st.subheader(md_escape(poster["EVENT_NAME"]))
-        st.write(f"**Poster by:** {', '.join(md_escape(c) for c in poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
+        st.write(f"**Poster By:** {', '.join(md_escape(c) for c in poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
         st.write(f"**Date:** {poster['DATE'].strftime('%d %B %Y').upper()}")
         st.write(f"**Venue:** {md_escape(poster['VENUE_NAME'])}")
         if poster["UPLOAD_TYPE"] == "COMMUNITY": st.badge("Community upload", icon=":material/groups:", color="yellow", help=COMMUNITY_HELP)
