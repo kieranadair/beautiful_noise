@@ -61,7 +61,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     # background, so it recedes) and the selected pill keeps the theme red but dimmed via opacity —
     # Streamlit tags the selected button's testid ...Active.
     with st.container(key="rights-holder-filter"):
-        _sel = st.pills("Shared with permission only", options=["rights_holder"], default=None, key="rights_holder_pills", format_func=lambda o: ":material/check_circle: Shared with permission only", label_visibility="collapsed")
+        _sel = st.pills("Shared with creator's permission", options=["rights_holder"], default=None, key="rights_holder_pills", format_func=lambda o: ":material/check_circle: Shared with creator's permission", label_visibility="collapsed")
     show_community = _sel is None
     st.html(
         "<style>"
