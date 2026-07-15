@@ -20,7 +20,7 @@ The people who *made* them. If you're a band, designer, photographer, or illustr
 
 ### I don't own the rights to a poster, can I still add it to the archive?
 
-Music is about fandom. This archive was built by one. We prefer posters to be uploaded with permission from their creators, but also realise that's not always possible (like when you see one that's too good not to archive). To strike a balance, we allow "Community Uploads" of posters, those archived for their cultural value by music fans. They're shown alongside everything else, but labelled as "Community Uploads". Later on, we also have a way for the creator to give permission or request it to be taken down.
+Music is about fandom. This archive was built by one. We prefer posters to be uploaded with permission from their creators, but also realise that's not always possible (like when you see one that's too good not to archive). To strike a balance, we allow "Community Uploads" of posters, those archived for their cultural value by music fans. They're shown alongside everything else, but labelled as "Community Uploads". Later on, we also have a way for the creator to give permission or request it to be taken down. If you'd rather browse only the posters shared with permission, there's a **Shared with creator's permission** filter in the gallery.
 
 ### I made a poster that someone else uploaded — can I claim or remove it?
 
