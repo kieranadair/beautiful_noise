@@ -20,16 +20,22 @@ GALLERY_COLUMNS = 5
 ss = st.session_state
 if "limit" not in ss: ss["limit"] = (GALLERY_COLUMNS * 3)
 
-COMMUNITY_HELP = (
-    "This was submitted as a community upload. If you are the rights holder and would "
-    "like it removed or amended, please submit a correction or request."
+RIGHTS_HOLDER_HELP = (
+    "The uploader told us they made this poster or hold the rights to it. If that's you and "
+    "you'd like it amended or removed, you can still submit a request."
 )
 
-# Explainer for what a community upload is — parked here for a future FAQ page, since the
-# gallery filter no longer surfaces it as a tooltip.
+COMMUNITY_HELP = (
+    "Shared by a community member for its historical value — the rights holder hasn't "
+    "personally signed off. If that's you, you can authorise it (to have it shown as shared "
+    "by the rights holder) or request its removal."
+)
+
+# Explainer for the community-vs-rights-holder distinction — parked here for the FAQ, since the
+# gallery filter surfaces only a short label.
 COMMUNITY_UPLOAD_EXPLAINER = (
-    "These are posters submitted by members of the community for historic value, but not "
-    "explicitly shared by the rights holder."
+    "Posters shared by community members for their historical value, rather than by the rights "
+    "holder directly."
 )
 
 # ---------------------------------------------------------------------------
@@ -47,20 +53,21 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     with c3: venue_filter = st.multiselect("Venues", options=all_venues)
     with c4: month_range_filter = st.select_slider("Dates", options=months, value=(months[0], months[-1]), format_func=month_fmt)
     headline_only = st.toggle("Headline shows only", disabled=not band_filter) if band_filter else False
-    # Community filter — a single-select pill acting as a show/hide toggle. The label is
-    # hidden (a fuller explanation will live on a future FAQ page — see
-    # COMMUNITY_UPLOAD_EXPLAINER). Streamlit pills have no per-widget colour, so we scope CSS
-    # to the keyed container (`.st-key-community-filter`): the unselected pill is a muted grey
-    # (lighter than the page background, so it recedes) and the selected pill keeps the theme
-    # red but dimmed via opacity — Streamlit tags the selected button's testid ...Active.
-    with st.container(key="community-filter"):
-        _sel = st.pills("Show community uploads", options=["community"], default="community", key="community_pills", format_func=lambda o: ":material/groups: Show community uploads", label_visibility="collapsed")
-    show_community = _sel is not None
+    # Rights-holder filter — an opt-in single-select pill. Off by default (everything shows);
+    # selecting it hides community uploads so only rights-holder-shared posters remain. The label
+    # is hidden (fuller explanation lives in the FAQ — see COMMUNITY_UPLOAD_EXPLAINER). Streamlit
+    # pills have no per-widget colour, so we scope CSS to the keyed container
+    # (`.st-key-rights-holder-filter`): the unselected pill is a muted grey (lighter than the page
+    # background, so it recedes) and the selected pill keeps the theme red but dimmed via opacity —
+    # Streamlit tags the selected button's testid ...Active.
+    with st.container(key="rights-holder-filter"):
+        _sel = st.pills("Rights-holder uploads only", options=["rights_holder"], default=None, key="rights_holder_pills", format_func=lambda o: ":material/handshake: Rights-holder uploads only", label_visibility="collapsed")
+    show_community = _sel is None
     st.html(
         "<style>"
-        ".st-key-community-filter [data-testid='stBaseButton-pills']{background:#f7f7f7!important;border-color:#e9e9e9!important;color:#b0b0b0!important;}"
-        ".st-key-community-filter [data-testid='stBaseButton-pills']:hover{background:#efefef!important;border-color:#e0e0e0!important;}"
-        ".st-key-community-filter [data-testid$='Active']{opacity:0.7!important;}"
+        ".st-key-rights-holder-filter [data-testid='stBaseButton-pills']{background:#f7f7f7!important;border-color:#e9e9e9!important;color:#b0b0b0!important;}"
+        ".st-key-rights-holder-filter [data-testid='stBaseButton-pills']:hover{background:#efefef!important;border-color:#e0e0e0!important;}"
+        ".st-key-rights-holder-filter [data-testid$='Active']{opacity:0.7!important;}"
         "</style>"
     )
 
@@ -70,7 +77,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
 
     # --- Empty state ---
     if not filtered_posters:
-        st.info("No posters match your filters." if (band_filter or venue_filter or credit_filter or month_range_filter) else "No posters uploaded yet.")
+        st.info("No posters match your filters." if (band_filter or venue_filter or credit_filter or month_range_filter or not show_community) else "No posters uploaded yet.")
         st.stop()
 
     # --- Thumbnail grid ---
@@ -89,8 +96,8 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
                     st.image(o["URL"])
                     with st.container(horizontal=True, vertical_alignment="center", gap="small"):
                         if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}", help="Click to view"): show_poster(o)
-                        if o["UPLOAD_TYPE"] == "COMMUNITY":
-                            st.markdown(":material/groups:")
+                        if o["UPLOAD_TYPE"] == "RIGHTS_HOLDER":
+                            st.markdown(":material/handshake:")
         st.space("small")
 
     # --- Pagination ---
@@ -118,7 +125,8 @@ def show_poster(poster):
         st.write(f"**Poster By:** {', '.join(md_escape(c) for c in poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
         st.write(f"**Date:** {poster['DATE'].strftime('%d %B %Y').upper()}")
         st.write(f"**Venue:** {md_escape(poster['VENUE_NAME'])}")
-        if poster["UPLOAD_TYPE"] == "COMMUNITY": st.badge("Community upload", icon=":material/groups:", color="yellow", help=COMMUNITY_HELP)
+        if poster["UPLOAD_TYPE"] == "RIGHTS_HOLDER": st.badge("Shared by rights holder", icon=":material/handshake:", color="green", help=RIGHTS_HOLDER_HELP)
+        else: st.badge("Community upload", icon=":material/groups:", color="grey", help=COMMUNITY_HELP)
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
         st.space(size="medium")
         st.page_link("contact_page.py", label="Submit a correction or request removal", icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})

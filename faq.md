@@ -14,13 +14,17 @@ At it's core, Beautiful Noise is about celebrating for the people who *make* gig
 
 Before you save, just edit it — every field on the review form is yours to change, and you can add or remove bands, swap the venue, or fix the date on the spot. If you spot a mistake on a poster that's *already* in the archive, use the [Contact](/contact_page) page to submit a correction.
 
+### Who do you most want to upload posters?
+
+The people who *made* them. If you're a band, designer, photographer, or illustrator sharing your own work, that's exactly what this archive is for — those posters are marked **Shared by rights holder** (a :material/handshake: badge) so they stand as directly shared by their creators.
+
 ### I don't own the rights to a poster, can I still add it to the archive?
 
-Music is about fandom. While we'd prefer uploads to be authorised by their rights holders, anyone can upload a poster. These will be flagged as "Community uploads" shared for their cultural value, rather than by the rights holder directly. They carry a small :material/groups: marker so you know the creator hasn't personally signed off.
+Absolutely — music is about fandom, and community contributions are how the archive grows. Anyone can upload a poster. Posters not shared by the rights holder are marked as **Community uploads** (a :material/groups: badge), shared for their cultural value so you know the creator hasn't personally signed off. They're shown right alongside everything else; if you'd rather see only creator-shared posters, use the **Rights-holder uploads only** filter in the gallery.
 
 ### I made a poster that someone else uploaded — can I claim or remove it?
 
-Yes, always. Head to [Contact](/contact_page), find your poster, and either **authorise** it (to remove the community-upload flag and have it stand as officially shared) or **request its removal**.
+Yes, always. Head to [Contact](/contact_page), find your poster, and either **authorise** it (to have it shown as **Shared by rights holder**) or **request its removal**.
 
 ### Who owns the posters? Can I reuse them?
 
