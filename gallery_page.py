@@ -129,7 +129,8 @@ def show_poster(poster):
         else: st.badge("Community upload", icon=":material/groups:", color="grey", help=COMMUNITY_HELP)
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
         st.space(size="medium")
-        st.page_link("contact_page.py", label="Submit a correction or request removal", icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
+        contact_label = "Authorise, submit a correction or request removal" if poster["UPLOAD_TYPE"] == "COMMUNITY" else "Submit a correction or request removal"
+        st.page_link("contact_page.py", label=contact_label, icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
 
 # ---------------------------------------------------------------------------
 # Data: poster cache, filter options, date range
