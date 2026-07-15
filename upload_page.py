@@ -139,7 +139,7 @@ with right:
             # Preprocess: PDF conversion, resize, compress. Bad/malicious/oversized files
             # raise ImageRejected — surface its safe message via the existing upload_error
             # path (no stack trace) and reset.
-            st.write("Processing image...")
+            st.write("Uploading image...")
             suffix = Path(img.name).suffix.lower()
             try:
                 if suffix == ".pdf":
@@ -160,7 +160,7 @@ with right:
             # Upload to stage + AI extraction
             target = upload_to_stage(S, ss["processed_img"])
 
-            st.write("Analysing image...")
+            st.write("Scanning the band names...")
             result = run_extraction(S, target, venue_list=all_venues)
             if not is_valid_poster(result):
                 ss["upload_error"] = "That doesn't look like a gig poster — please try again."
@@ -168,7 +168,7 @@ with right:
                 st.rerun()
 
             # Fuzzy match + log post-processing audit trail
-            st.write("Getting suggestions from database...")
+            st.write("Populating upload form...")
             headliners_raw, supports_raw, date_str, venue, event_name = parse_extraction(result)
             matched_headliners, matched_supports, inferred_date, matched_venue, normed_event_name = prepare_review_defaults(headliners_raw, supports_raw, date_str, venue, event_name, all_bands, all_venues)
             log_processed(S, target, headliners_raw + supports_raw, date_str, venue, event_name, matched_headliners + matched_supports, inferred_date, matched_venue, normed_event_name)
