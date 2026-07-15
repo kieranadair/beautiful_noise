@@ -107,7 +107,7 @@ with left:
             reset_upload()
             st.rerun()
         else:
-            with st.spinner("Saving to archive..."):
+            with st.spinner("Saving to archive... Please don't close this page."):
                 upload_type_val = "RIGHTS_HOLDER" if upload_type.startswith("I created") else "COMMUNITY"
                 save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], upload_type=upload_type_val, **prepare_save_data(headliners, supports, event_date, venue, event_name, credits))
                 get_all_posters.clear()
