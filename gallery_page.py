@@ -21,14 +21,14 @@ ss = st.session_state
 if "limit" not in ss: ss["limit"] = (GALLERY_COLUMNS * 3)
 
 RIGHTS_HOLDER_HELP = (
-    "The uploader told us they made this poster or hold the rights to it. If that's you and "
-    "you'd like it amended or removed, you can still submit a request."
+    "The uploader told us they made this poster or hold the rights to it. If that's not the "
+    "case, please submit a request to have it corrected or removed."
 )
 
 COMMUNITY_HELP = (
-    "Shared by a community member for its historical value — the rights holder hasn't "
-    "personally signed off. If that's you, you can authorise it (to have it shown as shared "
-    "by the rights holder) or request its removal."
+    "Shared by a community member for its historical value — the creator hasn't signed off on "
+    "it. If that's you, you can authorise it (to have it shown as shared with your permission) "
+    "or request its removal."
 )
 
 # Explainer for the community-vs-rights-holder distinction — parked here for the FAQ, since the
@@ -61,7 +61,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     # background, so it recedes) and the selected pill keeps the theme red but dimmed via opacity —
     # Streamlit tags the selected button's testid ...Active.
     with st.container(key="rights-holder-filter"):
-        _sel = st.pills("Rights-holder uploads only", options=["rights_holder"], default=None, key="rights_holder_pills", format_func=lambda o: ":material/handshake: Rights-holder uploads only", label_visibility="collapsed")
+        _sel = st.pills("Shared with permission only", options=["rights_holder"], default=None, key="rights_holder_pills", format_func=lambda o: ":material/check_circle: Shared with permission only", label_visibility="collapsed")
     show_community = _sel is None
     st.html(
         "<style>"
@@ -97,7 +97,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
                     with st.container(horizontal=True, vertical_alignment="center", gap="small"):
                         if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}", help="Click to view"): show_poster(o)
                         if o["UPLOAD_TYPE"] == "RIGHTS_HOLDER":
-                            st.markdown(":material/handshake:")
+                            st.markdown(":material/check_circle:")
         st.space("small")
 
     # --- Pagination ---
@@ -125,7 +125,7 @@ def show_poster(poster):
         st.write(f"**Poster By:** {', '.join(md_escape(c) for c in poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
         st.write(f"**Date:** {poster['DATE'].strftime('%d %B %Y').upper()}")
         st.write(f"**Venue:** {md_escape(poster['VENUE_NAME'])}")
-        if poster["UPLOAD_TYPE"] == "RIGHTS_HOLDER": st.badge("Shared by rights holder", icon=":material/handshake:", color="green", help=RIGHTS_HOLDER_HELP)
+        if poster["UPLOAD_TYPE"] == "RIGHTS_HOLDER": st.badge("Shared with creator's permission", icon=":material/check_circle:", color="green", help=RIGHTS_HOLDER_HELP)
         else: st.badge("Community upload", icon=":material/groups:", color="grey", help=COMMUNITY_HELP)
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
         st.space(size="medium")

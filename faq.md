@@ -16,15 +16,15 @@ Before you save, just edit it — every field on the review form is yours to cha
 
 ### Who do you most want to upload posters?
 
-The people who *made* them. If you're a band, designer, photographer, or illustrator sharing your own work, that's exactly what this archive is for — those posters are marked **Shared by rights holder** (a :material/handshake: badge) so they stand as directly shared by their creators.
+The people who *made* them. If you're a band, designer, photographer, or illustrator sharing your own work, that's exactly what this archive is for — those posters are marked **Shared with creator's permission** (a :material/check_circle: badge) so they stand as directly shared by, or with the blessing of, their creators.
 
 ### I don't own the rights to a poster, can I still add it to the archive?
 
-Absolutely — music is about fandom, and community contributions are how the archive grows. Anyone can upload a poster. Posters not shared by the rights holder are marked as **Community uploads** (a :material/groups: badge), shared for their cultural value so you know the creator hasn't personally signed off. They're shown right alongside everything else; if you'd rather see only creator-shared posters, use the **Rights-holder uploads only** filter in the gallery.
+Absolutely — music is about fandom, and community contributions are how the archive grows. Anyone can upload a poster. Posters not shared by their creator are marked as **Community uploads** (a :material/groups: badge), shared for their cultural value so you know the creator hasn't signed off on it. They're shown right alongside everything else; if you'd rather see only creator-shared posters, use the **Shared with permission only** filter in the gallery.
 
 ### I made a poster that someone else uploaded — can I claim or remove it?
 
-Yes, always. Head to [Contact](/contact_page), find your poster, and either **authorise** it (to have it shown as **Shared by rights holder**) or **request its removal**.
+Yes, always. Head to [Contact](/contact_page), find your poster, and either **authorise** it (to have it shown as **Shared with creator's permission**) or **request its removal**.
 
 ### Who owns the posters? Can I reuse them?
 

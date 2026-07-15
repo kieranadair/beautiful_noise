@@ -134,7 +134,7 @@ if primary_poster:
 
     if request_type == "ATTRIBUTION":
 
-        st.info("Community members may upload posters they believe have cultural value to the archive. If you are a rights holder, use this form to have your poster shown as shared by the rights holder. To correct or add poster credits (designer, photographer, etc.), use the \"Correct a band, venue, poster credit or event name\" option instead.", icon=":material/info:")
+        st.info("Community members may upload posters they believe have cultural value to the archive. If you are a rights holder, use this form to have your poster shown as shared with your permission. To correct or add poster credits (designer, photographer, etc.), use the \"Correct a band, venue, poster credit or event name\" option instead.", icon=":material/info:")
 
         additional_labels = {l: p for l, p in poster_labels.items() if l != primary_label and p["UPLOAD_TYPE"] == "COMMUNITY"}
         add_more = st.checkbox("Add additional posters to this request", key="attribution_more")
