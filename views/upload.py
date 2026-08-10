@@ -52,11 +52,17 @@ left, right = st.columns(2, gap="large")
 with left:
 
     # --- File uploader ---
-    img = st.file_uploader("Upload a gig poster", type=["jpg", "jpeg", "png", "webp", "pdf"], key=f"uploader_{ss['upload_key']}", label_visibility="collapsed", disabled="result" in ss)
-
-    # Sits with the uploader rather than the details form — this is guidance about *which file to
-    # pick*, so it belongs at the moment of choosing, not once the file is already in.
-    st.caption(":material/document_scanner: Scans and original files make the best archive copies. Photos of posters out in the wild are welcome too — just try to get them flat and square-on.")
+    # The label carries the upload guidance. Keeping it in the widget's own label (rather than a
+    # caption underneath) attaches the note to the thing it describes and keeps it accessible,
+    # with the practical tip in help= so it's there for anyone who wants it without adding a
+    # second line of page copy.
+    img = st.file_uploader(
+        ":material/document_scanner: Scans and original files make the best archive copies.",
+        type=["jpg", "jpeg", "png", "webp", "pdf"],
+        key=f"uploader_{ss['upload_key']}",
+        help="Photos of posters out in the wild are welcome too — just try to get them flat and square-on.",
+        disabled="result" in ss,
+    )
 
     if "upload_error" in ss:
         st.error(ss.pop("upload_error"))
