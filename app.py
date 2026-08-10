@@ -60,7 +60,7 @@ with st.container(horizontal=True, vertical_alignment="center", gap="small"):
 # Maker credit, on its own line at the very bottom — the usual spot for one. Deliberately "Made
 # by" rather than a © line: the caption above already assigns copyright to uploaders, and a second
 # © against a different name would muddy that.
-st.caption("Made in Narrm by Kieran Adair")
+st.caption("Made by Kieran Adair")
 
 # --- TEMPORARY: soft-launch notice -----------------------------------------------------------
 # Pinned to the viewport with st.bottom so it stays visible while browsing — this is the one
