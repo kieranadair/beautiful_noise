@@ -23,10 +23,19 @@ st.divider()
 def reset_upload():
     for k in ("result", "saved"):
         ss.pop(k, None)
-    ss["upload_key"] += 1
+    bump_upload_key()
+
+def bump_upload_key():
+    """Advance the uploader's key so Streamlit discards the previous file_uploader's state.
+    Reads defensively: `ss["upload_key"] += 1` raises if session state has been cleared, and this
+    runs on the error paths, where an extra exception would bury the real one."""
+    ss["upload_key"] = ss.get("upload_key", 0) + 1
 
 ss = st.session_state
-if "upload_key" not in ss: ss["upload_key"] = 0
+# Bound once per run, not re-read at each use. Both the uploader and the form derive their widget
+# keys from it, so a mid-run change would leave them disagreeing — and re-reading session state
+# for a value we already have is what turned a lost session into a hard KeyError here once.
+upload_key = ss.setdefault("upload_key", 0)
 
 # ---------------------------------------------------------------------------
 # Data: session, poster cache, and filter options (needed for form dropdowns
@@ -59,7 +68,7 @@ with left:
     img = st.file_uploader(
         ":material/document_scanner: Scans and original files make the best archive copies.",
         type=["jpg", "jpeg", "png", "webp", "pdf"],
-        key=f"uploader_{ss['upload_key']}",
+        key=f"uploader_{upload_key}",
         help="Photos of posters out in the wild are welcome too — just try to get them flat and square-on.",
         disabled="result" in ss,
     )
@@ -75,7 +84,7 @@ with left:
     band_options = sorted(set(all_bands + r.get("matched_headliners", []) + r.get("matched_supports", [])))
     venue_options = sorted(set(all_venues + r.get("matched_venues", [])))
 
-    with st.form(f"poster_details_{ss['upload_key']}"):
+    with st.form(f"poster_details_{upload_key}"):
         st.subheader("Poster Details")
         if has_result and not ss.get("saved"):
             st.info("Form populated — check before submitting")
@@ -182,7 +191,7 @@ with right:
             result = run_extraction(S, target, venue_list=all_venues)
             if not is_valid_poster(result):
                 ss["upload_error"] = "That doesn't look like a gig poster — please try again."
-                ss["upload_key"] += 1
+                bump_upload_key()
                 st.rerun()
 
             # Fuzzy match + log post-processing audit trail
