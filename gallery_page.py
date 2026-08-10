@@ -87,7 +87,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     st.space("small")
 
     for row_start in range(0, len(visible_posters), GALLERY_COLUMNS):
-        cols = st.columns(GALLERY_COLUMNS, gap="large")
+        cols = st.columns(GALLERY_COLUMNS, gap="medium")
         for i, c in enumerate(cols):
             idx = row_start + i
             if idx < len(visible_posters):
@@ -111,7 +111,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
 # Fragment: poster detail dialog
 # ---------------------------------------------------------------------------
 
-@st.dialog(":material/visibility:", width="large")
+@st.dialog("Poster details", width="large", icon=":material/visibility:")
 def show_poster(poster):
     left, right = st.columns([1, 1])
     with left:

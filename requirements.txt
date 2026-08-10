@@ -1,4 +1,6 @@
-streamlit
+# Floor set by the APIs this app uses: st.navigation(position="hidden") (1.56), st.bottom (1.57)
+# and st.dialog(icon=...) (1.53). 1.61 also requires Python >= 3.10.
+streamlit>=1.61.1
 snowflake-snowpark-python
 rapidfuzz
 # Native parsers that decode untrusted uploads — pinned to advisory-clean floors
