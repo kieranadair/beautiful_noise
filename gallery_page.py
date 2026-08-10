@@ -138,13 +138,18 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
         "</style>"
     )
 
+    st.caption(":material/ads_click: Click any poster to view its details")
+    st.space("small")
+
     for row_start in range(0, len(visible_posters), GALLERY_COLUMNS):
         cols = st.columns(GALLERY_COLUMNS, gap="medium")
         for i, c in enumerate(cols):
             idx = row_start + i
             if idx < len(visible_posters):
                 o = visible_posters[idx]
-                with c.container():
+                # gap="xxsmall" pulls the rights-holder tick up close to the poster it describes;
+                # the container's default "small" (1rem) left them looking unrelated.
+                with c.container(gap="xxsmall"):
                     with st.container(key=f"poster-card-{o['POSTER_ID']}"):
                         st.image(o["URL"])
                         # Own keyed container so the CSS can position the hit layer without
@@ -187,6 +192,12 @@ def show_poster(poster):
         if poster["UPLOAD_TYPE"] == "RIGHTS_HOLDER": st.badge("Shared with creator's permission", icon=":material/check_circle:", color="green", help=RIGHTS_HOLDER_HELP)
         else: st.badge("Community upload", icon=":material/groups:", color="grey", help=COMMUNITY_HELP)
         st.caption(f"Poster ID: {poster['POSTER_ID']}")
+        st.space("small")
+        # Shareable deep link. st.context.url gives scheme/host/path with any query string already
+        # stripped, so appending ?poster= is safe even when the dialog was itself opened from a
+        # shared link. st.code renders it with a one-click copy button.
+        st.caption(":material/link: Share this poster")
+        st.code(f"{st.context.url}?poster={poster['POSTER_ID']}", language=None, wrap_lines=True)
         st.space(size="medium")
         contact_label = "Authorise, submit a correction or request removal" if poster["UPLOAD_TYPE"] == "COMMUNITY" else "Submit a correction or request removal"
         st.page_link("contact_page.py", label=contact_label, icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
