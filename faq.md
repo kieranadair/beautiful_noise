@@ -14,6 +14,14 @@ At its core, Beautiful Noise is about celebrating the people who *make* gig post
 
 Before you save, just edit it — every field on the review form is yours to change, and you can add or remove bands, swap the venue, or fix the date on the spot. If you spot a mistake on a poster that's *already* in the archive, use the [Contact](/contact_page) page to submit a correction.
 
+### Is AI used in this project? How?
+
+Yes, but we take steps to ensure its use is limited and the rights of the designers are respected. When you upload a poster the image goes to a vision model which reads it and hands back: the band names, date, venue, and event name. Its use is limited to reading the posters.
+
+The archive and model are both hosted inside a private Snowflake database. We chose Snowflake because their [AI terms](https://www.snowflake.com/en/legal/compliance/snowflake-ai-trust-and-safety/) commit that inputs and outputs aren't used to train models for other customers, so your poster isn't shipped off to OpenAI, Google, Meta or anyone else to use to train image generation models.
+
+Opting for a private database and model is core to keeping the archive independent.
+
 ### Who do you most want to upload posters?
 
 The people who *made* them. If you're a band, designer, photographer, or illustrator sharing your own work, that's exactly what this archive is for — those posters are marked **Shared with creator's permission** (a :material/check_circle: badge) so they stand as directly shared by, or with the blessing of, their creators.
