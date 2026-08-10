@@ -69,8 +69,7 @@ st.caption("Made by Kieran Adair")
 # that call is the maintainer's to make.
 with st.bottom:
     st.info(
-        "**Beautiful Noise has just launched.** The archive is new and still finding its feet, so "
-        "you may hit the odd rough edge. Spotted a bug, or got a suggestion? "
-        "[Message us on Instagram](https://www.instagram.com/beautifulnoise.melbourne) — we'd love to hear from you.",
+        "**Just launched**. Spotted a bug, or got a suggestion? "
+        "[Message us on Instagram](https://www.instagram.com/beautifulnoise.melbourne).",
         icon=":material/rocket_launch:",
     )
