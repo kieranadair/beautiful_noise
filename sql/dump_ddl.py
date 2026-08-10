@@ -7,9 +7,9 @@ Reads the same .streamlit/secrets.toml the app uses (gitignored), connects with 
 key-pair auth as core.db.get_session(), and writes one .sql file per object.
 
 Scope is deliberately narrow:
-  * DATA only. STAGING is a stale clone belonging to the admin app and is not tracked here.
+  * DATA only — it is the sole application schema.
   * Schema objects only. GRANTS ARE NOT DUMPED — this repo is public, and role/privilege
-    topology does not belong in it. Keep those in .context/ (gitignored).
+    topology does not belong in it or anywhere else on disk in this project.
   * No data. GET_DDL emits structure, never rows.
 
 Cost note: unlike a SHOW command, GET_DDL runs as a query and will briefly resume the
@@ -36,12 +36,9 @@ SECRETS = ROOT / ".streamlit" / "secrets.toml"
 # table appears in the snapshot automatically on the next run.
 KINDS = [("TABLE", "tables"), ("VIEW", "views"), ("TASK", "tasks")]
 
-# Objects excluded from the snapshot. Listed here rather than deleted by hand, so a regeneration
-# doesn't quietly reintroduce them.
-#
-#   ADMIN_APP  stage for the abandoned Streamlit-in-Snowflake admin app; that approach proved too
-#              restrictive and is being reconsidered elsewhere.
-EXCLUDE = {"ADMIN_APP"}
+# Object names to keep out of the snapshot. Listed here rather than deleted by hand, so a
+# regeneration doesn't quietly reintroduce them.
+EXCLUDE = set()
 
 
 def connect(cfg):
