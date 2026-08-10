@@ -188,15 +188,23 @@ def save_poster(S: Session, file_name: str, bands: list[str], headliners: list[s
 # tuple in step with the view.
 VARIANT_COLUMNS = ("BANDS", "HEADLINERS", "SUPPORTS", "CREDITS", "VENUES")
 
-@st.cache_data(show_spinner="Downloading poster data")
+# The cached poster list holds presigned URLs, which Snowflake expires on a fixed clock. A cache
+# entry that outlives its URLs serves dead links: every poster image 404s until something clears
+# the cache. So the cache TTL must stay strictly *below* the URL TTL — the gap is the headroom.
+# Uploads clear the cache anyway, so in practice this only fires during a quiet week.
+PRESIGNED_URL_TTL = 7 * 24 * 60 * 60  # 604800s — lifetime Snowflake stamps on each URL
+POSTER_CACHE_TTL = 6 * 24 * 60 * 60   # refetch a day early, so no served URL is near expiry
+
+@st.cache_data(ttl=POSTER_CACHE_TTL, show_spinner="Downloading poster data")
 @with_retry
 def get_all_posters(_S: Session) -> list[dict]:
-    """Fetch all posters from POSTER_GALLERY_V with presigned image URLs (7-day TTL).
+    """Fetch all posters from POSTER_GALLERY_V with presigned image URLs.
     Returns list[dict] with every VARIANT_COLUMNS entry parsed from VARIANT to a Python list.
-    Cached by @st.cache_data — cleared after each upload via .clear(). Decorator order is
+    Cached by @st.cache_data — cleared after each upload via .clear(), and expiring on
+    POSTER_CACHE_TTL so the URLs can't go stale on a long-running server. Decorator order is
     intentional: cache on outside skips DB call when warm, retry on inside protects
     the actual Snowflake query on cache misses."""
-    posters = _S.table("POSTER_GALLERY_V").with_column("URL", call_builtin("GET_PRESIGNED_URL", lit(f"@{STAGE}"), col("FILE_NAME"), 604800)).sort(col("UPLOADED_AT").desc()).collect()
+    posters = _S.table("POSTER_GALLERY_V").with_column("URL", call_builtin("GET_PRESIGNED_URL", lit(f"@{STAGE}"), col("FILE_NAME"), PRESIGNED_URL_TTL)).sort(col("UPLOADED_AT").desc()).collect()
     return [{**o.as_dict(), **{c: json.loads(o[c]) for c in VARIANT_COLUMNS}} for o in posters]
 
 @with_retry

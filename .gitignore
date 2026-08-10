@@ -21,3 +21,6 @@ Screenshot*.png
 
 # Assistant guidance — local only, like .context/
 CLAUDE.md
+
+# Deployment walkthrough — scratch notes, deliberately not part of the public repo
+DEPLOY_NOTES.md
