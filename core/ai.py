@@ -15,7 +15,9 @@ PROMPT_BASE = """Look at this image and do two things:
    - supports: support acts, openers, and DJs — typically displayed smaller or lower on the billing. Leave empty if there is no clear hierarchy
    - date: the event date in MM-DD format; do NOT provide year even if visible. If the poster
      lists several dates (a tour, or a multi-day event), return the EARLIEST one
-   - venue: pick from this list if the venue matches: [{venues}]. If no match, return the venue name as written on the poster
+   - venues: the venue(s) the event is at. Pick from this list where a venue matches:
+     [{venues}]. For any that don't match, return the name as written on the poster. Usually
+     one, but a day party or crawl can span several — return every venue named
    - event_name: specific festival or night name only; null if none
 
 If it is not a valid poster, return empty values for the remaining fields."""
@@ -34,10 +36,10 @@ RESPONSE_FORMAT = {
             "headliners": {"type": "array", "items": {"type": "string"}},
             "supports":   {"type": "array", "items": {"type": "string"}},
             "date":       {"type": "string"},
-            "venue":      {"type": "string"},
+            "venues":     {"type": "array", "items": {"type": "string"}},
             "event_name": {"type": ["string", "null"]}
         },
-        "required": ["is_valid", "headliners", "supports", "date", "venue", "event_name"]
+        "required": ["is_valid", "headliners", "supports", "date", "venues", "event_name"]
     }
 }
 
@@ -64,10 +66,11 @@ def is_valid_poster(result: dict) -> bool:
     return bool(result.get("is_valid", False))
 
 
-def parse_extraction(result: dict) -> tuple[list[str], list[str], str, str, str | None]:
-    """Unwrap raw AI result into (headliners, supports, date, venue, event_name) tuple with safe defaults.
+def parse_extraction(result: dict) -> tuple[list[str], list[str], str, list[str], str | None]:
+    """Unwrap raw AI result into (headliners, supports, date, venues, event_name) with safe defaults.
     Returns empty list/string for missing fields, None for absent event_name.
-    If headliners is empty but supports has values, promotes all supports to headliners."""
+    If headliners is empty but supports has values, promotes all supports to headliners.
+    venues is a list — most posters name one, but a day party can span several."""
     headliners = result.get("headliners", [])
     supports = result.get("supports", [])
     if not headliners and supports:
@@ -76,6 +79,6 @@ def parse_extraction(result: dict) -> tuple[list[str], list[str], str, str, str 
         headliners,
         supports,
         result.get("date", ""),
-        result.get("venue", ""),
+        result.get("venues", []),
         result.get("event_name")
     )

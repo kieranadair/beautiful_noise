@@ -27,7 +27,7 @@ all_bands, all_venues, all_credits, _, _ = get_poster_vars(all_posters)
 # Constants & lookup maps
 # ---------------------------------------------------------------------------
 
-poster_labels = {f"{p['POSTER_ID']} — {', '.join(p['BANDS'][:2])} — {p['VENUE_NAME']} — {p['DATE']:%d %b %Y}": p for p in all_posters}
+poster_labels = {f"{p['POSTER_ID']} — {', '.join(p['BANDS'][:2])} — {', '.join(p['VENUES'])} — {p['DATE']:%d %b %Y}": p for p in all_posters}
 
 REQUEST_TYPES = {
     "Authorise a community upload (I'm the rights holder)": "ATTRIBUTION",
@@ -87,7 +87,7 @@ if primary_poster:
             st.write(f"**Headliners:** {', '.join(md_escape(x) for x in primary_poster['HEADLINERS'])}")
             st.write(f"**Supports:** {', '.join(md_escape(x) for x in primary_poster['SUPPORTS']) if primary_poster['SUPPORTS'] else ''}")
             st.write(f"**Event:** {md_escape(primary_poster['EVENT_NAME']) if primary_poster['EVENT_NAME'] else ''}")
-            st.write(f"**Venue:** {md_escape(primary_poster['VENUE_NAME'])}")
+            st.write(f"**{'Venues' if len(primary_poster['VENUES']) > 1 else 'Venue'}:** {', '.join(md_escape(v) for v in primary_poster['VENUES'])}")
             st.write(f"**Date:** {primary_poster['DATE']:%d %B %Y}")
             st.write(f"**Poster By:** {', '.join(md_escape(x) for x in primary_poster['CREDITS']) if primary_poster['CREDITS'] else 'Unknown'}")
             if primary_poster["UPLOAD_TYPE"] == "COMMUNITY":
@@ -164,13 +164,13 @@ if primary_poster:
         st.info("Use this form to correct a misspelled or incorrect band, venue, poster credit, or event name. You can apply the correction to all posters or just specific ones.", icon=":material/info:")
 
         poster_bands = sorted(primary_poster["BANDS"])
-        poster_venue = [primary_poster["VENUE_NAME"]]
+        poster_venues = sorted(primary_poster["VENUES"])
         poster_credits = sorted(primary_poster["CREDITS"])
         poster_event = [primary_poster["EVENT_NAME"]] if primary_poster.get("EVENT_NAME") else []
 
         entity_label = st.radio("What needs correcting?", options=ENTITY_TYPES.keys())
         entity_type = ENTITY_TYPES.get(entity_label)
-        scoped_options = {"BAND": poster_bands, "VENUE": poster_venue, "CREDIT": poster_credits, "EVENT": poster_event}.get(entity_type, [])
+        scoped_options = {"BAND": poster_bands, "VENUE": poster_venues, "CREDIT": poster_credits, "EVENT": poster_event}.get(entity_type, [])
         full_options = {"BAND": all_bands, "VENUE": all_venues, "CREDIT": all_credits, "EVENT": []}.get(entity_type, [])
 
         if entity_type == "EVENT":
@@ -191,11 +191,10 @@ if primary_poster:
                 st.rerun()
 
         else:
-            if entity_type in ("BAND", "CREDIT"):
-                current_value = st.selectbox(f"Which {entity_label.lower()}?", options=scoped_options, index=None)
-            else:
-                current_value = scoped_options[0] if scoped_options else None
-                st.write(f"**{entity_label}:** {md_escape(current_value)}")
+            # BAND, VENUE and CREDIT are all multi-valued on a poster now, so each needs a
+            # "which one?" picker. VENUE used to be shown as fixed text because a poster could
+            # only have one; a day-party poster can name several.
+            current_value = st.selectbox(f"Which {entity_label.lower()}?", options=scoped_options, index=None)
 
             if current_value:
                 additional_count = sum(1 for p in all_posters if poster_has(p, entity_type, current_value)) - 1

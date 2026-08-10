@@ -153,7 +153,7 @@ def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None 
             posters = [p for p in posters if any(b in band_set for b in p["BANDS"])]
     if venue_filter:
         venue_set = set(venue_filter)
-        posters = [p for p in posters if p["VENUE_NAME"] in venue_set]
+        posters = [p for p in posters if any(v in venue_set for v in p["VENUES"])]
     if credit_filter:
         credit_set = set(credit_filter)
         posters = [p for p in posters if any(c in credit_set for c in p["CREDITS"])]
@@ -167,15 +167,15 @@ def get_poster_vars(all_posters: list[dict]) -> tuple[list[str], list[str], list
     """Extract sorted unique bands, venues, credits, and date range from cached poster data.
     Used to populate filter options and form dropdowns."""
     all_bands = sorted(set(band for o in all_posters for band in o["BANDS"]))
-    all_venues = sorted(set(o["VENUE_NAME"] for o in all_posters))
+    all_venues = sorted(set(venue for o in all_posters for venue in o["VENUES"]))
     all_credits = sorted(set(c for o in all_posters for c in o["CREDITS"]))
     date_min = min(o["DATE"] for o in all_posters)
     date_max = max(o["DATE"] for o in all_posters)
     return all_bands, all_venues, all_credits, date_min, date_max
 
-def prepare_review_defaults(headliners: list[str], supports: list[str], date_str: str, venue: str, event_name: str | None, all_bands: list[str], all_venues: list[str]) -> tuple[list[str], list[str], date, str | None, str | None]:
+def prepare_review_defaults(headliners: list[str], supports: list[str], date_str: str, venues: list[str], event_name: str | None, all_bands: list[str], all_venues: list[str]) -> tuple[list[str], list[str], date, list[str], str | None]:
     """Normalise, fuzzy-match, and infer date from raw AI extraction values.
-    Returns (matched_headliners, matched_supports, inferred_date, matched_venue, normed_event_name)."""
+    Returns (matched_headliners, matched_supports, inferred_date, matched_venues, normed_event_name)."""
     normed_headliners = [n for b in headliners if (n := normalise(b))]
     matched_headliners = [fuzzy_match(b, all_bands, threshold=90) for b in normed_headliners]
     normed_supports = [n for b in supports if (n := normalise(b))]
@@ -183,14 +183,14 @@ def prepare_review_defaults(headliners: list[str], supports: list[str], date_str
 
     inferred_date = infer_date(date_str)
     
-    normed_venue = normalise(venue)
-    matched_venue = fuzzy_match(normed_venue, all_venues, threshold=80) if normed_venue else None
+    normed_venues = [n for v in venues if (n := normalise(v))]
+    matched_venues = [fuzzy_match(v, all_venues, threshold=80) for v in normed_venues]
     
     normed_event_name = normalise(event_name)
     
-    return matched_headliners, matched_supports, inferred_date, matched_venue, normed_event_name
+    return matched_headliners, matched_supports, inferred_date, matched_venues, normed_event_name
 
-def prepare_save_data(headliners: list[str], supports: list[str], event_date, venue: str, event_name: str, credits: list[str]) -> dict:
+def prepare_save_data(headliners: list[str], supports: list[str], event_date, venues: list[str], event_name: str, credits: list[str]) -> dict:
     """Normalise raw form values into a clean dict ready for save_poster().
     Applies normalise() to all text fields; passes event_date through as-is.
     bands is the merged headliners + supports list; headliners preserved for IS_HEADLINER flag.
@@ -198,11 +198,12 @@ def prepare_save_data(headliners: list[str], supports: list[str], event_date, ve
     normed_headliners = [n for b in headliners if (n := normalise(b))]
     normed_supports = [n for b in supports if (n := normalise(b))]
     normed_credits = [n for c in credits if (n := normalise(c))]
+    normed_venues = [n for v in venues if (n := normalise(v))]
     return {
         "bands": normed_headliners + normed_supports,
         "headliners": normed_headliners,
         "event_date": event_date,
-        "venue": normalise(venue) or "",
+        "venues": normed_venues,
         "event_name": normalise(event_name),
         "credits": normed_credits
     }
@@ -212,13 +213,14 @@ def check_duplicate_md5(md5_hash: str, all_posters: list[dict]) -> bool:
     Runs against cached poster data — no Snowflake call."""
     return any(p["MD5_HASH"] == md5_hash for p in all_posters)
 
-def check_semantic_duplicate(bands: list[str], venue: str, event_date, all_posters: list[dict]) -> bool:
-    """Check if a poster with the same bands, venue, and date already exists.
-    Compares frozenset(bands), venue, and date. Runs against cached poster data — no Snowflake call.
-    Returns True if duplicate found."""
-    check = (frozenset(b.upper() for b in bands), venue.upper(), event_date)
+def check_semantic_duplicate(bands: list[str], venues: list[str], event_date, all_posters: list[dict]) -> bool:
+    """Check if a poster with the same bands, venues, and date already exists.
+    Compares frozenset(bands), frozenset(venues), and date — venues is a set because a poster can
+    name several and their order carries no meaning. Runs against cached poster data — no
+    Snowflake call. Returns True if duplicate found."""
+    check = (frozenset(b.upper() for b in bands), frozenset(v.upper() for v in venues), event_date)
     return any(
-        (frozenset(p["BANDS"]), p["VENUE_NAME"], p["DATE"]) == check
+        (frozenset(p["BANDS"]), frozenset(p["VENUES"]), p["DATE"]) == check
         for p in all_posters
     )
 
@@ -236,6 +238,6 @@ def month_range(start: date, end: date) -> list[date]:
 
 def poster_has(p: dict, entity_type: str, value: str) -> bool:
     """Check if a poster matches an entity value by type. Works with cached poster dicts.
-    BAND and CREDIT are multi-valued (membership); VENUE is scalar (equality)."""
-    if entity_type in ("BAND", "CREDIT"): return value in p[{"BAND": "BANDS", "CREDIT": "CREDITS"}[entity_type]]
-    return p[{"VENUE": "VENUE_NAME"}[entity_type]] == value
+    All three are multi-valued now — a poster can name several venues (a day party across a few
+    rooms), just as it can list several bands or credits."""
+    return value in p[{"BAND": "BANDS", "CREDIT": "CREDITS", "VENUE": "VENUES"}[entity_type]]

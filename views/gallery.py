@@ -55,7 +55,7 @@ def poster_label(poster: dict) -> str:
     """Accessible label for the invisible overlay button. CSS hides it visually, but screen
     readers still announce it, so it must be escaped like any other widget label."""
     names = poster["HEADLINERS"] or poster["BANDS"]
-    return f"View {md_escape(', '.join(names))} at {md_escape(poster['VENUE_NAME'])}"
+    return f"View {md_escape(', '.join(names))} at {md_escape(', '.join(poster['VENUES']))}"
 
 
 # ---------------------------------------------------------------------------
@@ -189,7 +189,8 @@ def show_poster(poster):
         if poster["EVENT_NAME"]: st.subheader(md_escape(poster["EVENT_NAME"]))
         st.write(f"**Poster By:** {', '.join(md_escape(c) for c in poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
         st.write(f"**Date:** {poster['DATE'].strftime('%d %B %Y').upper()}")
-        st.write(f"**Venue:** {md_escape(poster['VENUE_NAME'])}")
+        venue_label = "Venues" if len(poster["VENUES"]) > 1 else "Venue"
+        st.write(f"**{venue_label}:** {', '.join(md_escape(v) for v in poster['VENUES'])}")
         # Both badges are grey: they label provenance, not status. Green read as a success signal
         # and gave rights-holder posters an endorsement the archive doesn't intend.
         if poster["UPLOAD_TYPE"] == "RIGHTS_HOLDER": st.badge("Shared with creator's permission", icon=":material/check_circle:", color="grey", help=RIGHTS_HOLDER_HELP)

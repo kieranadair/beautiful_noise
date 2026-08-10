@@ -133,20 +133,27 @@ def get_or_insert_event(S: Session, event_name: str | None, event_date, venue_id
     ).select("EVENT_ID").collect()[0][0]
 
 @with_retry
-def save_poster(S: Session, file_name: str, bands: list[str], headliners: list[str], event_date, venue: str, event_name: str | None, credits: list[str], md5_hash: str, upload_type: str) -> None:
-    """Orchestrates the full poster save: upserts dimensions (venue, credits, bands),
+def save_poster(S: Session, file_name: str, bands: list[str], headliners: list[str], event_date, venues: list[str], event_name: str | None, credits: list[str], md5_hash: str, upload_type: str) -> None:
+    """Orchestrates the full poster save: upserts dimensions (venues, credits, bands),
     upserts the event, then MERGEs into POSTERS (on file_name), BAND_EVENTS
-    (on event_id + band_id) and POSTER_CREDITS (on poster_id + credit_id). All writes
-    are idempotent — safe under @with_retry. Re-fetches the session from cache before
+    (on event_id + band_id), POSTER_VENUES and POSTER_CREDITS (on poster_id + the other id).
+    All writes are idempotent — safe under @with_retry. Re-fetches the session from cache before
     MERGEs to pick up any reconnect from inner retries.
     headliners is the list of band names that are headliners — all others are supports.
     credits is the flat list of people credited on the poster (designers, photographers,
-    illustrators, etc.) — optional, may be empty."""
+    illustrators, etc.) — optional, may be empty.
+
+    venues may name several places (a day party across a few rooms). They are NOT
+    interchangeable: venues[0] becomes the event's VENUE_ID, which is what distinguishes one
+    unnamed gig from another in get_or_insert_event — most events have no name, so date alone
+    would merge unrelated gigs and, because BAND_EVENTS is event-keyed, merge their lineups too.
+    Every venue (including the first) is also linked to the poster via POSTER_VENUES, so that
+    junction is the single list to read for display and filtering."""
     headliner_set = set(headliners)
-    venue_id = get_or_insert(S, "VENUES", "VENUE_NAME", venue)
+    venue_ids = [get_or_insert(S, "VENUES", "VENUE_NAME", v) for v in venues]
     band_ids = [(get_or_insert(S, "BANDS", "BAND_NAME", b), b in headliner_set) for b in bands]
     credit_ids = [get_or_insert(S, "CREDITS", "CREDIT_NAME", c) for c in credits]
-    event_id = get_or_insert_event(S, event_name, event_date, venue_id)
+    event_id = get_or_insert_event(S, event_name, event_date, venue_ids[0])
     S = get_session()
     poster_source = S.create_dataframe([[file_name, event_id, md5_hash, upload_type]], schema=["FILE_NAME", "EVENT_ID", "MD5_HASH", "UPLOAD_TYPE"])
     poster_target = S.table("POSTERS")
@@ -158,10 +165,16 @@ def save_poster(S: Session, file_name: str, bands: list[str], headliners: list[s
             be_source = S.create_dataframe([[event_id, bid, is_hl]], schema=["EVENT_ID", "BAND_ID", "IS_HEADLINER"])
             be_target.merge(be_source, (be_target["EVENT_ID"] == be_source["EVENT_ID"]) & (be_target["BAND_ID"] == be_source["BAND_ID"]),
                             [when_not_matched().insert({"EVENT_ID": be_source["EVENT_ID"], "BAND_ID": be_source["BAND_ID"], "IS_HEADLINER": be_source["IS_HEADLINER"]})])
+    # poster_id is only assigned during the POSTERS merge above, so re-fetch it here (file_name
+    # is a UUID, guaranteed unique) before linking anything to the poster. Fetched once and
+    # unconditionally: venues always exist, and credits may too.
+    poster_id = poster_target.filter(col("FILE_NAME") == file_name).select("POSTER_ID").collect()[0][0]
+    pv_target = S.table("POSTER_VENUES")
+    for vid in venue_ids:
+        pv_source = S.create_dataframe([[poster_id, vid]], schema=["POSTER_ID", "VENUE_ID"])
+        pv_target.merge(pv_source, (pv_target["POSTER_ID"] == pv_source["POSTER_ID"]) & (pv_target["VENUE_ID"] == pv_source["VENUE_ID"]),
+                        [when_not_matched().insert({"POSTER_ID": pv_source["POSTER_ID"], "VENUE_ID": pv_source["VENUE_ID"]})])
     if credit_ids:
-        # poster_id is only assigned during the POSTERS merge above, so re-fetch it here
-        # (file_name is a UUID, guaranteed unique) before linking credits.
-        poster_id = poster_target.filter(col("FILE_NAME") == file_name).select("POSTER_ID").collect()[0][0]
         pc_target = S.table("POSTER_CREDITS")
         for cid in credit_ids:
             pc_source = S.create_dataframe([[poster_id, cid]], schema=["POSTER_ID", "CREDIT_ID"])
@@ -188,15 +201,19 @@ def upload_to_stage(S, file: BytesIO) -> str:
     return result.target
 
 @with_retry
-def log_processed(S: Session, file_name: str, bands: list[str], date: str, venue: str, event_name: str | None, matched_bands: list[str], inferred_date, matched_venue: str | None, normed_event_name: str | None) -> None:
+def log_processed(S: Session, file_name: str, bands: list[str], date: str, venues: list[str], event_name: str | None, matched_bands: list[str], inferred_date, matched_venues: list[str], normed_event_name: str | None) -> None:
     """Log post-processed AI extraction results to EXTRACTIONS_PROCESSED for audit.
     Stores both raw AI values and post-fuzzy-match values. Join with EXTRACTIONS_RAW
-    on file_name to isolate errors to LLM vs post-processing."""
+    on file_name to isolate errors to LLM vs post-processing.
+    venues/matched_venues are VARIANT arrays, mirroring bands/matched_bands — a poster can name
+    several venues, and the raw column records exactly what the model returned."""
     S.create_dataframe(
-        [[file_name, json.dumps(bands), json.dumps(matched_bands), venue, matched_venue, date, inferred_date, event_name, normed_event_name]],
-        schema=["file_name", "bands", "matched_bands", "venue", "matched_venue", "date", "inferred_date", "event_name", "normed_event_name"]
+        [[file_name, json.dumps(bands), json.dumps(matched_bands), json.dumps(venues), json.dumps(matched_venues), date, inferred_date, event_name, normed_event_name]],
+        schema=["file_name", "bands", "matched_bands", "venues", "matched_venues", "date", "inferred_date", "event_name", "normed_event_name"]
     ).with_column("bands", parse_json(col("bands"))) \
      .with_column("matched_bands", parse_json(col("matched_bands"))) \
+     .with_column("venues", parse_json(col("venues"))) \
+     .with_column("matched_venues", parse_json(col("matched_venues"))) \
      .write.save_as_table("EXTRACTIONS_PROCESSED", mode="append", column_order="name")
 
 @with_retry

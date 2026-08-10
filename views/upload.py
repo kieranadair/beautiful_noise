@@ -73,7 +73,7 @@ with left:
     form_disabled = not has_result or ss.get("saved", False)
 
     band_options = sorted(set(all_bands + r.get("matched_headliners", []) + r.get("matched_supports", [])))
-    venue_options = sorted(set(all_venues + ([r["matched_venue"]] if r.get("matched_venue") else [])))
+    venue_options = sorted(set(all_venues + r.get("matched_venues", [])))
 
     with st.form(f"poster_details_{ss['upload_key']}"):
         st.subheader("Poster Details")
@@ -82,7 +82,7 @@ with left:
         headliners = st.multiselect("Headliners", options=band_options, default=r.get("matched_headliners", []), accept_new_options=True, disabled=form_disabled)
         supports = st.multiselect("Support Acts", options=band_options, default=r.get("matched_supports", []), accept_new_options=True, disabled=form_disabled)
         event_date = st.date_input("Event Date", value=r.get("inferred_date"), format="DD/MM/YYYY", disabled=form_disabled, help="A poster can only be filed under one date. If it lists several — a tour, or a multi-day event — we record the earliest.")
-        venue = st.selectbox("Venue", options=venue_options, index=venue_options.index(r["matched_venue"]) if r.get("matched_venue") in venue_options else None, accept_new_options=True, disabled=form_disabled)
+        venues = st.multiselect("Venue", options=venue_options, default=r.get("matched_venues", []), accept_new_options=True, disabled=form_disabled, help="Most posters name one. Add more only if the event genuinely spans several — a day party across a few rooms.")
         event_name = st.text_input("Event Name", value=r.get("normed_event_name", ""), placeholder="Leave empty if not a named event", disabled=form_disabled)
         credits = st.multiselect("Poster By", options=all_credits, accept_new_options=True, disabled=form_disabled, help="Designers, photographers, illustrators — anyone credited on the poster. Leave empty if unknown.")
         no_credits_confirmed = st.checkbox("I don't know who made this poster", disabled=form_disabled)
@@ -99,8 +99,8 @@ with left:
             errors.append("Please add at least one band or artist.")
         elif not headliners:
             errors.append("At least one band must be a headliner.")
-        if not venue:
-            errors.append("Please ensure the venue is filled in.")
+        if not venues:
+            errors.append("Please add at least one venue.")
         if upload_type and not credits:
             if upload_type.startswith("I created"):
                 errors.append("Authorised uploads require at least one poster credit — please add who made the poster.")
@@ -112,15 +112,15 @@ with left:
     # --- Save: semantic duplicate check then persist ---
     if submitted and not errors:
         all_bands_merged = headliners + supports
-        if check_semantic_duplicate(all_bands_merged, venue, event_date, all_posters):
-            ss["upload_error"] = "A poster with these bands, venue, and date already exists."
+        if check_semantic_duplicate(all_bands_merged, venues, event_date, all_posters):
+            ss["upload_error"] = "A poster with these bands, venues, and date already exists."
             reset_upload()
             st.rerun()
         else:
             with st.spinner("Saving to archive... Please don't close this page."):
                 upload_type_val = "RIGHTS_HOLDER" if upload_type.startswith("I created") else "COMMUNITY"
                 try:
-                    save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], upload_type=upload_type_val, **prepare_save_data(headliners, supports, event_date, venue, event_name, credits))
+                    save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], upload_type=upload_type_val, **prepare_save_data(headliners, supports, event_date, venues, event_name, credits))
                 finally:
                     # Clear even when save_poster raises. Its writes are MERGEs that can land
                     # before a later step fails, so a failed save does not mean nothing was
@@ -187,9 +187,9 @@ with right:
 
             # Fuzzy match + log post-processing audit trail
             st.write("Populating upload form...")
-            headliners_raw, supports_raw, date_str, venue, event_name = parse_extraction(result)
-            matched_headliners, matched_supports, inferred_date, matched_venue, normed_event_name = prepare_review_defaults(headliners_raw, supports_raw, date_str, venue, event_name, all_bands, all_venues)
-            log_processed(S, target, headliners_raw + supports_raw, date_str, venue, event_name, matched_headliners + matched_supports, inferred_date, matched_venue, normed_event_name)
+            headliners_raw, supports_raw, date_str, venues_raw, event_name = parse_extraction(result)
+            matched_headliners, matched_supports, inferred_date, matched_venues, normed_event_name = prepare_review_defaults(headliners_raw, supports_raw, date_str, venues_raw, event_name, all_bands, all_venues)
+            log_processed(S, target, headliners_raw + supports_raw, date_str, venues_raw, event_name, matched_headliners + matched_supports, inferred_date, matched_venues, normed_event_name)
 
             # Store result in session state to populate review form
             ss["result"] = {
@@ -198,7 +198,7 @@ with right:
                 "matched_headliners": matched_headliners,
                 "matched_supports": matched_supports,
                 "inferred_date": inferred_date,
-                "matched_venue": matched_venue,
+                "matched_venues": matched_venues,
                 "normed_event_name": normed_event_name,
             }
 
