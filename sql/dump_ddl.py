@@ -81,6 +81,10 @@ def main():
                  if n.upper() not in EXCLUDE]
         target = OUT / folder
         target.mkdir(parents=True, exist_ok=True)
+        # Clear first, so a renamed or dropped object doesn't leave a stale file behind claiming
+        # an object that no longer exists. Everything in these folders is generated.
+        for old in target.glob("*.sql"):
+            old.unlink()
         for name in sorted(names):
             fq = f"{db}.{schema}.{name}"
             try:
