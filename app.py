@@ -4,25 +4,11 @@ from core.config import CONTENT_DIR
 
 st.set_page_config(layout="wide", page_title="Beautiful Noise", page_icon=":material/music_note:")
 
-# App-wide multiselect tweaks.
-#
-# 1. Tags truncate their label by default, but the gallery filters and upload form carry long
-#    band and venue names — let the tags size to their content instead.
-# 2. Hide the "Select all" row Streamlit added to multiselect dropdowns in 1.55. There is no
-#    parameter to disable it (confirmed against the 1.61 signature and the 1.55 release note),
-#    and it is meaningless here: selecting every band as a gallery filter is a no-op dressed as
-#    an action, and on the upload form one click would dump every known band into Headliners.
-#
-#    CAVEAT — this selector is fragile by necessity. Streamlit exposes no stable hook on that
-#    row; `st-emotion-cache-*` is a build-generated hash that changes when the component's styles
-#    change, so RE-CHECK THIS AFTER ANY STREAMLIT UPGRADE. It fails safe: if it stops matching,
-#    the row simply reappears — nothing breaks or moves. It also cannot be scoped to a keyed
-#    container, because BaseWeb renders the dropdown in a portal at document-body level, outside
-#    the widget's own DOM.
+# Multiselect tags truncate their label by default, but the gallery filters and upload form carry
+# long band and venue names — let the tags size to their content instead.
 st.html(
     "<style>"
     'span[data-baseweb="tag"] > span:first-child{max-width:none!important;overflow:visible!important;}'
-    ".st-emotion-cache-dam8qg.el1q88c13{display:none!important;}"
     "</style>"
 )
 
