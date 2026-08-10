@@ -108,19 +108,31 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     # rather than one rule per poster. A *button* — not a link — is what makes this work: a click
     # is an ordinary rerun, so it never navigates, never starts a fresh session, and never loses
     # pagination or filter state. Any href-based approach reloads the app and drops both.
+    # The overlay is targeted via its OWN keyed container (`poster-hit-`), never by matching on
+    # Streamlit's internal DOM. An earlier version positioned
+    # `[data-testid="stElementContainer"]:has(button)` and broke the whole grid: st.image renders
+    # its own fullscreen button, so that selector caught the *image's* wrapper too, pulled it out
+    # of flow, and collapsed every card to zero height. Keyed containers are a documented,
+    # stable hook — internal testids are not, so nothing load-bearing should depend on them.
     primary = st.get_option("theme.primaryColor")
     st.html(
         "<style>"
         '[class*="st-key-poster-card-"]{position:relative;cursor:pointer;}'
-        # The button's element wrapper is what carries the flow height, so position that (not just
-        # the <button>) to keep the card's height equal to the image's.
-        '[class*="st-key-poster-card-"] [data-testid="stElementContainer"]:has(button)'
-        "{position:absolute;inset:0;z-index:2;margin:0;}"
-        '[class*="st-key-poster-card-"] button{width:100%;height:100%;opacity:0;cursor:pointer;}'
+        # Hit layer fills the card and sits above the image (including its fullscreen control,
+        # which would otherwise swallow clicks near the top-right corner).
+        '[class*="st-key-poster-hit-"]{position:absolute;inset:0;z-index:10;}'
+        # Streamlit nests the button in wrapper divs; each needs full height for the click target
+        # to reach the bottom of the poster rather than just the top few pixels.
+        '[class*="st-key-poster-hit-"] > div,'
+        '[class*="st-key-poster-hit-"] [data-testid="stElementContainer"],'
+        '[class*="st-key-poster-hit-"] [data-testid="stButton"]{height:100%;}'
+        '[class*="st-key-poster-hit-"] button'
+        "{width:100%;height:100%;opacity:0;cursor:pointer;border:none;}"
         # Hover affordance — the actual fix for "clicking this is confusing".
         '[class*="st-key-poster-card-"] [data-testid="stImage"]{transition:filter .15s ease;}'
         '[class*="st-key-poster-card-"]:hover [data-testid="stImage"]{filter:brightness(0.88);}'
-        # Focus ring goes on the card: the button itself is transparent, so its own ring is invisible.
+        # Focus ring goes on the card: the button itself is transparent, so its own ring is
+        # invisible. Purely cosmetic — if :has() ever fails here, layout is unaffected.
         f'[class*="st-key-poster-card-"]:has(button:focus-visible)'
         f"{{outline:3px solid {primary};outline-offset:3px;}}"
         "</style>"
@@ -135,11 +147,13 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
                 with c.container():
                     with st.container(key=f"poster-card-{o['POSTER_ID']}"):
                         st.image(o["URL"])
-                        # Falls back to a visible text button under the poster if the CSS above
-                        # ever stops matching — degraded, but still fully usable.
-                        if st.button(poster_label(o), key=f"view_{o['POSTER_ID']}", type="tertiary"):
-                            st.query_params["poster"] = str(o["POSTER_ID"])
-                            st.rerun()
+                        # Own keyed container so the CSS can position the hit layer without
+                        # guessing at Streamlit's internals. If the CSS ever stops matching this
+                        # degrades to a visible text button under the poster — still usable.
+                        with st.container(key=f"poster-hit-{o['POSTER_ID']}"):
+                            if st.button(poster_label(o), key=f"view_{o['POSTER_ID']}", type="tertiary"):
+                                st.query_params["poster"] = str(o["POSTER_ID"])
+                                st.rerun()
                     # Outside the keyed card, so it can never sit over the button's hit area.
                     if o["UPLOAD_TYPE"] == "RIGHTS_HOLDER":
                         st.markdown(":material/check_circle:")
