@@ -58,7 +58,7 @@ def poster_label(poster: dict) -> str:
     names = poster["HEADLINERS"] or poster["BANDS"]
     return f"View {md_escape(', '.join(names))} at {md_escape(poster['VENUE_NAME'])}"
 
-COPY_LABEL = "Copy link to this poster"
+COPY_LABEL = "Share poster"
 
 def copy_link_button(url: str, poster_id) -> None:
     """One-click 'copy to clipboard' button for a poster's share URL.
@@ -74,18 +74,21 @@ def copy_link_button(url: str, poster_id) -> None:
     """
     btn_id = f"bn-share-{poster_id}"
     st.html(
+        # Styled to read as a link, not a button — it sits directly above the contact page_link
+        # and should match its weight and size. Everything inherits (font, size, colour) so it
+        # tracks the theme rather than pinning values that would drift from it.
         "<style>"
-        ".bn-share{display:inline-flex;align-items:center;gap:.5rem;font:inherit;font-size:.875rem;"
-        "color:inherit;background:transparent;border:1px solid rgba(49,51,63,.25);"
-        "padding:.4rem .75rem;cursor:pointer;}"
-        ".bn-share:hover{border-color:currentColor;}"
+        ".bn-share{display:inline-flex;align-items:center;gap:.5rem;font:inherit;color:inherit;"
+        "background:transparent;border:none;padding:0;cursor:pointer;}"
+        ".bn-share svg{width:1.15em;height:1.15em;flex:none;}"
+        ".bn-share:hover{opacity:.7;}"
         "</style>"
         f"<button class='bn-share' id='{btn_id}' type='button'>"
-        "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor'"
+        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor'"
         " stroke-width='2' stroke-linecap='round' aria-hidden='true'>"
         "<path d='M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5'/>"
         "<path d='M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5'/></svg>"
-        f"<span>{COPY_LABEL}</span></button>"
+        f"<span aria-live='polite'>{COPY_LABEL}</span></button>"
         "<script>(function(){"
         f"var b=document.getElementById({json.dumps(btn_id)}),u={json.dumps(url)},"
         f"L={json.dumps(COPY_LABEL)};"
@@ -243,9 +246,9 @@ def show_poster(poster):
         # and gave rights-holder posters an endorsement the archive doesn't intend.
         if poster["UPLOAD_TYPE"] == "RIGHTS_HOLDER": st.badge("Shared with creator's permission", icon=":material/check_circle:", color="grey", help=RIGHTS_HOLDER_HELP)
         else: st.badge("Community upload", icon=":material/groups:", color="grey", help=COMMUNITY_HELP)
-        st.space("small")
-        copy_link_button(f"{st.context.url}?poster={poster['POSTER_ID']}", poster["POSTER_ID"])
+        # The two actions sit together as a pair, separated from the metadata above them.
         st.space(size="medium")
+        copy_link_button(f"{st.context.url}?poster={poster['POSTER_ID']}", poster["POSTER_ID"])
         contact_label = "Authorise, submit a correction or request removal" if poster["UPLOAD_TYPE"] == "COMMUNITY" else "Submit a correction or request removal"
         st.page_link("views/contact.py", label=contact_label, icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
 
