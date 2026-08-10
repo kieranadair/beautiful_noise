@@ -36,10 +36,16 @@ SECRETS = ROOT / ".streamlit" / "secrets.toml"
 # table appears in the snapshot automatically on the next run.
 KINDS = [("TABLE", "tables"), ("VIEW", "views"), ("TASK", "tasks")]
 
-# Objects belonging to the abandoned Streamlit-in-Snowflake admin app. That approach proved too
-# restrictive and is being reconsidered, so its artefacts are not part of this repo's scope.
-# Excluded here rather than deleted by hand, so a regeneration doesn't quietly reintroduce them.
-EXCLUDE = {"ADMIN_APP"}
+# Objects excluded from the snapshot. Listed here rather than deleted by hand, so a regeneration
+# doesn't quietly reintroduce them.
+#
+#   ADMIN_APP         stage for the abandoned Streamlit-in-Snowflake admin app; that approach
+#                     proved too restrictive and is being reconsidered elsewhere.
+#   POSTERS_PROCESSED a stray. Snowpark's save_as_table(mode="append") issues CREATE TABLE IF NOT
+#                     EXISTS, so a stale-bytecode process recreated the pre-rename table and wrote
+#                     to it. Its one audit row has been recovered into EXTRACTIONS_PROCESSED; the
+#                     empty shell awaits a DROP. Remove this entry once it's gone.
+EXCLUDE = {"ADMIN_APP", "POSTERS_PROCESSED"}
 
 
 def connect(cfg):

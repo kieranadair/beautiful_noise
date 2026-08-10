@@ -9,6 +9,7 @@ create or replace view POSTER_GALLERY_V(
 	EVENT_NAME,
 	DATE,
 	VENUE_NAME,
+	VENUES,
 	UPLOADED_AT,
 	MD5_HASH,
 	UPLOAD_TYPE,
@@ -22,9 +23,16 @@ WITH poster_credits_agg AS (
     FROM BEAUTIFUL_NOISE.DATA.POSTER_CREDITS pc
     JOIN BEAUTIFUL_NOISE.DATA.CREDITS cr ON pc.credit_id = cr.credit_id
     GROUP BY pc.poster_id
+),
+poster_venues_agg AS (
+    SELECT pv.poster_id, ARRAY_AGG(vn.venue_name) AS venues
+    FROM BEAUTIFUL_NOISE.DATA.POSTER_VENUES pv
+    JOIN BEAUTIFUL_NOISE.DATA.VENUES vn ON pv.venue_id = vn.venue_id
+    GROUP BY pv.poster_id
 )
 SELECT
     p.poster_id, p.file_name, e.event_name, e.date, v.venue_name,
+    COALESCE(pva.venues, ARRAY_CONSTRUCT(v.venue_name)) AS venues,
     p.uploaded_at, p.md5_hash, p.upload_type,
     ARRAY_AGG(b.band_name) AS bands,
     ARRAY_AGG(CASE WHEN be.is_headliner = TRUE  THEN b.band_name END) AS headliners,
@@ -36,5 +44,6 @@ JOIN BEAUTIFUL_NOISE.DATA.VENUES      v  ON e.venue_id = v.venue_id
 JOIN BEAUTIFUL_NOISE.DATA.BAND_EVENTS be ON e.event_id = be.event_id
 JOIN BEAUTIFUL_NOISE.DATA.BANDS       b  ON be.band_id = b.band_id
 LEFT JOIN poster_credits_agg pca ON p.poster_id = pca.poster_id
+LEFT JOIN poster_venues_agg  pva ON p.poster_id = pva.poster_id
 GROUP BY p.poster_id, p.file_name, e.event_name, e.date, v.venue_name,
-         p.uploaded_at, p.md5_hash, p.upload_type, pca.credits;
+         p.uploaded_at, p.md5_hash, p.upload_type, pca.credits, pva.venues;
