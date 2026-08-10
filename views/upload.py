@@ -119,8 +119,16 @@ with left:
         else:
             with st.spinner("Saving to archive... Please don't close this page."):
                 upload_type_val = "RIGHTS_HOLDER" if upload_type.startswith("I created") else "COMMUNITY"
-                save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], upload_type=upload_type_val, **prepare_save_data(headliners, supports, event_date, venue, event_name, credits))
-                get_all_posters.clear()
+                try:
+                    save_poster(S=S, file_name=r["target"], md5_hash=r["md5_hash"], upload_type=upload_type_val, **prepare_save_data(headliners, supports, event_date, venue, event_name, credits))
+                finally:
+                    # Clear even when save_poster raises. Its writes are MERGEs that can land
+                    # before a later step fails, so a failed save does not mean nothing was
+                    # written — and if the cache still predates that write, both dedup checks
+                    # (MD5 and semantic) run against a list that can't see it. That is exactly
+                    # how a duplicate poster got in: the save succeeded, the line after it threw,
+                    # the cache was never cleared, and the re-upload sailed through.
+                    get_all_posters.clear()
                 ss["saved"] = True
                 st.rerun()
 
