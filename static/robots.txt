@@ -1,3 +1,16 @@
+# NOT CURRENTLY IN EFFECT.
+#
+# Streamlit serves this folder at /app/static/robots.txt. Crawlers only read /robots.txt at the
+# domain root, and on a *.streamlit.app subdomain that path belongs to Streamlit — there is no
+# route config that would let the app claim it. So these directives are not being honoured by
+# anything today.
+#
+# The file is kept because it is the correct content in the correct place the moment a custom
+# domain fronts the app (e.g. via a CDN or reverse proxy that can serve /robots.txt). Until then,
+# the enforceable lever is the Terms of Service, not this file.
+#
+# Intent: block AI-training crawlers, allow ordinary search indexing.
+
 User-agent: GPTBot
 Disallow: /
 
