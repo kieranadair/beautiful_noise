@@ -39,13 +39,9 @@ KINDS = [("TABLE", "tables"), ("VIEW", "views"), ("TASK", "tasks")]
 # Objects excluded from the snapshot. Listed here rather than deleted by hand, so a regeneration
 # doesn't quietly reintroduce them.
 #
-#   ADMIN_APP         stage for the abandoned Streamlit-in-Snowflake admin app; that approach
-#                     proved too restrictive and is being reconsidered elsewhere.
-#   POSTERS_PROCESSED a stray. Snowpark's save_as_table(mode="append") issues CREATE TABLE IF NOT
-#                     EXISTS, so a stale-bytecode process recreated the pre-rename table and wrote
-#                     to it. Its one audit row has been recovered into EXTRACTIONS_PROCESSED; the
-#                     empty shell awaits a DROP. Remove this entry once it's gone.
-EXCLUDE = {"ADMIN_APP", "POSTERS_PROCESSED"}
+#   ADMIN_APP  stage for the abandoned Streamlit-in-Snowflake admin app; that approach proved too
+#              restrictive and is being reconsidered elsewhere.
+EXCLUDE = {"ADMIN_APP"}
 
 
 def connect(cfg):
