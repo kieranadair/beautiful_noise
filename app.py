@@ -4,11 +4,26 @@ from core.config import CONTENT_DIR
 
 st.set_page_config(layout="wide", page_title="Beautiful Noise", page_icon=":material/music_note:")
 
-# Multiselect tags truncate their label by default, but the gallery filters and upload form carry
-# long band and venue names — let the tags size to their content instead.
+# App-wide multiselect tweaks.
+#
+# 1. Tags truncate their label by default, but the gallery filters and upload form carry long
+#    band and venue names — let the tags size to their content instead.
+# 2. Hide the "Select all" row Streamlit added to multiselect dropdowns in 1.55. There's no
+#    parameter to disable it (checked against the 1.61 signature and the 1.55 release note), and
+#    it doesn't fit this app: selecting every band as a gallery filter is a no-op dressed as an
+#    action, and on the upload form one click would dump every known band into Headliners.
+#
+#    Targeted on `data-key="__select_all__"`, the key Streamlit gives that specific option. An
+#    earlier attempt used the row's `st-emotion-cache-*` class and hid every option in the list —
+#    those hashes are generated per style block, so "Select all" and a real option share them.
+#    Style hashes describe appearance; only this attribute identifies the row.
+#
+#    The rule is global rather than scoped to a keyed container because BaseWeb renders the
+#    dropdown in a portal at document-body level, outside the widget's own DOM.
 st.html(
     "<style>"
     'span[data-baseweb="tag"] > span:first-child{max-width:none!important;overflow:visible!important;}'
+    '[role="option"][data-key="__select_all__"]{display:none!important;}'
     "</style>"
 )
 
