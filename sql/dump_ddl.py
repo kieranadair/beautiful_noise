@@ -36,6 +36,11 @@ SECRETS = ROOT / ".streamlit" / "secrets.toml"
 # table appears in the snapshot automatically on the next run.
 KINDS = [("TABLE", "tables"), ("VIEW", "views"), ("TASK", "tasks")]
 
+# Objects belonging to the abandoned Streamlit-in-Snowflake admin app. That approach proved too
+# restrictive and is being reconsidered, so its artefacts are not part of this repo's scope.
+# Excluded here rather than deleted by hand, so a regeneration doesn't quietly reintroduce them.
+EXCLUDE = {"ADMIN_APP"}
+
 
 def connect(cfg):
     pkey = serialization.load_pem_private_key(
@@ -72,7 +77,8 @@ def main():
 
     written = 0
     for kind, folder in KINDS:
-        names = [n for (n,) in show(f"SHOW {kind}S IN SCHEMA {db}.{schema}", "name")]
+        names = [n for (n,) in show(f"SHOW {kind}S IN SCHEMA {db}.{schema}", "name")
+                 if n.upper() not in EXCLUDE]
         target = OUT / folder
         target.mkdir(parents=True, exist_ok=True)
         for name in sorted(names):
@@ -95,7 +101,8 @@ def main():
             print(f"  {kind:6} {name}")
 
     # Stages carry no GET_DDL support; record their definitions descriptively instead.
-    stages = show(f"SHOW STAGES IN SCHEMA {db}.{schema}", "name", "type", "url")
+    stages = [s for s in show(f"SHOW STAGES IN SCHEMA {db}.{schema}", "name", "type", "url")
+              if s[0].upper() not in EXCLUDE]
     if stages:
         (OUT / "stages.md").write_text(
             "# Stages in BEAUTIFUL_NOISE.DATA\n\n"
