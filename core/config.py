@@ -5,6 +5,12 @@ import streamlit as st
 # than the working directory, so reads work no matter where `streamlit run` is invoked from.
 CONTENT_DIR = Path(__file__).resolve().parent.parent / "content"
 
+# A deliberately blank browser-tab icon. Streamlit offers no way to *omit* the favicon —
+# page_icon=None falls back to the Streamlit logo — so the only route to an empty tab is to hand
+# it an image containing nothing. This is a 32x32 fully transparent PNG. Resolved from __file__
+# for the same reason CONTENT_DIR is: `streamlit run` can be invoked from anywhere.
+BLANK_ICON = str(Path(__file__).resolve().parent.parent / "static" / "blank_favicon.png")
+
 DB    = st.secrets["connections"]["snowflake"]["database"]
 SC    = st.secrets["connections"]["snowflake"]["schema"]
 STAGE = st.secrets["app"]["stage"]
