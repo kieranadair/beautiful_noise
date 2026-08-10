@@ -175,7 +175,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
 # Fragment: poster detail dialog
 # ---------------------------------------------------------------------------
 
-@st.dialog("Poster details", width="large", icon=":material/visibility:", on_dismiss=clear_poster_param)
+@st.dialog("Poster details", width="large", icon=":material/ads_click:", on_dismiss=clear_poster_param)
 def show_poster(poster):
     left, right = st.columns([1, 1])
     with left:
