@@ -181,17 +181,23 @@ def save_poster(S: Session, file_name: str, bands: list[str], headliners: list[s
             pc_target.merge(pc_source, (pc_target["POSTER_ID"] == pc_source["POSTER_ID"]) & (pc_target["CREDIT_ID"] == pc_source["CREDIT_ID"]),
                             [when_not_matched().insert({"POSTER_ID": pc_source["POSTER_ID"], "CREDIT_ID": pc_source["CREDIT_ID"]})])
 
+# Every ARRAY column on POSTER_GALLERY_V arrives from Snowpark as a JSON *string* and has to be
+# parsed back into a Python list. Adding an array column to the view without adding it here is a
+# silent failure, not a crash: the value stays a string, and since strings are iterable, every
+# `join`/`in`/`set` over it quietly operates on single characters instead of names. Keep this
+# tuple in step with the view.
+VARIANT_COLUMNS = ("BANDS", "HEADLINERS", "SUPPORTS", "CREDITS", "VENUES")
+
 @st.cache_data(show_spinner="Downloading poster data")
 @with_retry
 def get_all_posters(_S: Session) -> list[dict]:
     """Fetch all posters from POSTER_GALLERY_V with presigned image URLs (7-day TTL).
-    Returns list[dict] with BANDS parsed from VARIANT to Python list. Cached by
-    @st.cache_data — cleared after each upload via .clear(). Decorator order is
+    Returns list[dict] with every VARIANT_COLUMNS entry parsed from VARIANT to a Python list.
+    Cached by @st.cache_data — cleared after each upload via .clear(). Decorator order is
     intentional: cache on outside skips DB call when warm, retry on inside protects
     the actual Snowflake query on cache misses."""
     posters = _S.table("POSTER_GALLERY_V").with_column("URL", call_builtin("GET_PRESIGNED_URL", lit(f"@{STAGE}"), col("FILE_NAME"), 604800)).sort(col("UPLOADED_AT").desc()).collect()
-    poster_data = [{**o.as_dict(), "BANDS": json.loads(o["BANDS"]), "HEADLINERS": json.loads(o["HEADLINERS"]), "SUPPORTS": json.loads(o["SUPPORTS"]), "CREDITS": json.loads(o["CREDITS"])} for o in posters]
-    return poster_data
+    return [{**o.as_dict(), **{c: json.loads(o[c]) for c in VARIANT_COLUMNS}} for o in posters]
 
 @with_retry
 def upload_to_stage(S, file: BytesIO) -> str:
