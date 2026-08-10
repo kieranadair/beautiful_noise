@@ -81,7 +81,7 @@ with left:
             st.info("Form populated — check before submitting")
         headliners = st.multiselect("Headliners", options=band_options, default=r.get("matched_headliners", []), accept_new_options=True, disabled=form_disabled)
         supports = st.multiselect("Support Acts", options=band_options, default=r.get("matched_supports", []), accept_new_options=True, disabled=form_disabled)
-        event_date = st.date_input("Event Date", value=r.get("inferred_date"), format="DD/MM/YYYY", disabled=form_disabled)
+        event_date = st.date_input("Event Date", value=r.get("inferred_date"), format="DD/MM/YYYY", disabled=form_disabled, help="A poster can only be filed under one date. If it lists several — a tour, or a multi-day event — we record the earliest.")
         venue = st.selectbox("Venue", options=venue_options, index=venue_options.index(r["matched_venue"]) if r.get("matched_venue") in venue_options else None, accept_new_options=True, disabled=form_disabled)
         event_name = st.text_input("Event Name", value=r.get("normed_event_name", ""), placeholder="Leave empty if not a named event", disabled=form_disabled)
         credits = st.multiselect("Poster By", options=all_credits, accept_new_options=True, disabled=form_disabled, help="Designers, photographers, illustrators — anyone credited on the poster. Leave empty if unknown.")

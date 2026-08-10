@@ -13,7 +13,8 @@ PROMPT_BASE = """Look at this image and do two things:
 2. If it is a valid poster, extract:
    - headliners: the headlining band(s) or artist(s) — typically displayed largest or at the top of the billing. If there is no clear hierarchy, put ALL bands/artists/performers here
    - supports: support acts, openers, and DJs — typically displayed smaller or lower on the billing. Leave empty if there is no clear hierarchy
-   - date: the event date in MM-DD format; do NOT provide year even if visible
+   - date: the event date in MM-DD format; do NOT provide year even if visible. If the poster
+     lists several dates (a tour, or a multi-day event), return the EARLIEST one
    - venue: pick from this list if the venue matches: [{venues}]. If no match, return the venue name as written on the poster
    - event_name: specific festival or night name only; null if none
 
