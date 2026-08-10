@@ -57,6 +57,11 @@ with st.container(horizontal=True, vertical_alignment="center", gap="small"):
         show_faq()
     st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/contact_page).")
 
+# Maker credit, on its own line at the very bottom — the usual spot for one. Deliberately "Made
+# by" rather than a © line: the caption above already assigns copyright to uploaders, and a second
+# © against a different name would muddy that.
+st.caption("Made in Narrm by Kieran Adair")
+
 # --- TEMPORARY: soft-launch notice -----------------------------------------------------------
 # Pinned to the viewport with st.bottom so it stays visible while browsing — this is the one
 # thing in the app that genuinely benefits from following the reader. Remove this whole block
