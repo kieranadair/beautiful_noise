@@ -1,3 +1,4 @@
+import json
 import streamlit as st
 from core.config import NAV_BTN_WIDTH
 from core.db import get_session, get_all_posters
@@ -56,6 +57,55 @@ def poster_label(poster: dict) -> str:
     readers still announce it, so it must be escaped like any other widget label."""
     names = poster["HEADLINERS"] or poster["BANDS"]
     return f"View {md_escape(', '.join(names))} at {md_escape(poster['VENUE_NAME'])}"
+
+COPY_LABEL = "Copy link to this poster"
+
+def copy_link_button(url: str, poster_id) -> None:
+    """One-click 'copy to clipboard' button for a poster's share URL.
+
+    Streamlit has no native clipboard action, so this is the sanctioned escape hatch: st.html with
+    inline JS (see CLAUDE.md). It can't be an st.button — the Clipboard API only works inside the
+    user-gesture that triggered it, and a Streamlit button's handler runs on the *rerun* after the
+    click, by which point the gesture is gone and the write is blocked.
+
+    Both interpolated values go through json.dumps, so they land as JS string literals rather than
+    as concatenated source. The values here are app-generated (st.context.url and an integer id),
+    but building JS by raw f-string is a habit worth not forming.
+    """
+    btn_id = f"bn-share-{poster_id}"
+    st.html(
+        "<style>"
+        ".bn-share{display:inline-flex;align-items:center;gap:.5rem;font:inherit;font-size:.875rem;"
+        "color:inherit;background:transparent;border:1px solid rgba(49,51,63,.25);"
+        "padding:.4rem .75rem;cursor:pointer;}"
+        ".bn-share:hover{border-color:currentColor;}"
+        "</style>"
+        f"<button class='bn-share' id='{btn_id}' type='button'>"
+        "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor'"
+        " stroke-width='2' stroke-linecap='round' aria-hidden='true'>"
+        "<path d='M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5'/>"
+        "<path d='M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5'/></svg>"
+        f"<span>{COPY_LABEL}</span></button>"
+        "<script>(function(){"
+        f"var b=document.getElementById({json.dumps(btn_id)}),u={json.dumps(url)},"
+        f"L={json.dumps(COPY_LABEL)};"
+        "if(!b||b.dataset.bound)return;b.dataset.bound='1';"
+        "var s=b.querySelector('span');"
+        "b.addEventListener('click',function(){"
+        "var done=function(ok){s.textContent=ok?'Link copied':'Copy failed';"
+        "setTimeout(function(){s.textContent=L;},2000);};"
+        "if(navigator.clipboard&&window.isSecureContext){"
+        "navigator.clipboard.writeText(u).then(function(){done(true);},function(){done(false);});"
+        "return;}"
+        # Fallback for non-secure contexts (e.g. plain-http local runs), where the Clipboard API
+        # is unavailable. Deprecated, but still widely supported.
+        "try{var t=document.createElement('textarea');t.value=u;t.style.position='fixed';"
+        "t.style.opacity='0';document.body.appendChild(t);t.select();"
+        "var ok=document.execCommand('copy');document.body.removeChild(t);done(ok);}"
+        "catch(e){done(false);}"
+        "});})();</script>",
+        unsafe_allow_javascript=True,
+    )
 
 # ---------------------------------------------------------------------------
 # Fragment: poster grid (filters, thumbnails, pagination)
@@ -175,7 +225,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
 # Fragment: poster detail dialog
 # ---------------------------------------------------------------------------
 
-@st.dialog("Poster details", width="large", icon=":material/ads_click:", on_dismiss=clear_poster_param)
+@st.dialog("Poster details", width="large", on_dismiss=clear_poster_param)
 def show_poster(poster):
     left, right = st.columns([1, 1])
     with left:
@@ -189,15 +239,12 @@ def show_poster(poster):
         st.write(f"**Poster By:** {', '.join(md_escape(c) for c in poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
         st.write(f"**Date:** {poster['DATE'].strftime('%d %B %Y').upper()}")
         st.write(f"**Venue:** {md_escape(poster['VENUE_NAME'])}")
-        if poster["UPLOAD_TYPE"] == "RIGHTS_HOLDER": st.badge("Shared with creator's permission", icon=":material/check_circle:", color="green", help=RIGHTS_HOLDER_HELP)
+        # Both badges are grey: they label provenance, not status. Green read as a success signal
+        # and gave rights-holder posters an endorsement the archive doesn't intend.
+        if poster["UPLOAD_TYPE"] == "RIGHTS_HOLDER": st.badge("Shared with creator's permission", icon=":material/check_circle:", color="grey", help=RIGHTS_HOLDER_HELP)
         else: st.badge("Community upload", icon=":material/groups:", color="grey", help=COMMUNITY_HELP)
-        st.caption(f"Poster ID: {poster['POSTER_ID']}")
         st.space("small")
-        # Shareable deep link. st.context.url gives scheme/host/path with any query string already
-        # stripped, so appending ?poster= is safe even when the dialog was itself opened from a
-        # shared link. st.code renders it with a one-click copy button.
-        st.caption(":material/link: Share this poster")
-        st.code(f"{st.context.url}?poster={poster['POSTER_ID']}", language=None, wrap_lines=True)
+        copy_link_button(f"{st.context.url}?poster={poster['POSTER_ID']}", poster["POSTER_ID"])
         st.space(size="medium")
         contact_label = "Authorise, submit a correction or request removal" if poster["UPLOAD_TYPE"] == "COMMUNITY" else "Submit a correction or request removal"
         st.page_link("views/contact.py", label=contact_label, icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
