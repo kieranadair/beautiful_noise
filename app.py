@@ -65,7 +65,8 @@ st.caption("Made by Kieran Adair")
 # --- TEMPORARY: soft-launch notice -----------------------------------------------------------
 # Pinned to the viewport with st.bottom so it stays visible while browsing — this is the one
 # thing in the app that genuinely benefits from following the reader. Remove this whole block
-# (and nothing else) once the archive is out of its launch period, ~September 2026.
+# (and nothing else) whenever the launch period is judged over — deliberately no target date,
+# that call is the maintainer's to make.
 with st.bottom:
     st.info(
         "**Beautiful Noise has just launched.** The archive is new and still finding its feet, so "
