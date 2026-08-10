@@ -75,11 +75,13 @@ def copy_link_button(url: str, poster_id) -> None:
     btn_id = f"bn-share-{poster_id}"
     st.html(
         # Styled to read as a link, not a button — it sits directly above the contact page_link
-        # and should match its weight and size. Everything inherits (font, size, colour) so it
-        # tracks the theme rather than pinning values that would drift from it.
+        # and should match its weight and size. Font size is pinned to 1rem (== theme
+        # baseFontSize) rather than inherited: `font: inherit` picked up a much larger size from
+        # whatever wrapper st.html lands in, and rendered at roughly heading scale.
         "<style>"
-        ".bn-share{display:inline-flex;align-items:center;gap:.5rem;font:inherit;color:inherit;"
-        "background:transparent;border:none;padding:0;cursor:pointer;}"
+        ".bn-share{display:inline-flex;align-items:center;gap:.5rem;font-family:inherit;"
+        "font-size:1rem;font-weight:400;line-height:1.6;color:inherit;background:transparent;"
+        "border:none;padding:0;margin:0;cursor:pointer;}"
         ".bn-share svg{width:1.15em;height:1.15em;flex:none;}"
         ".bn-share:hover{opacity:.7;}"
         "</style>"
