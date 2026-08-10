@@ -42,7 +42,7 @@ RESPONSE_FORMAT = {
 
 
 def run_extraction(S: Session, stage_filename: str, venue_list: list[str] | None = None) -> dict:
-    """Call AI_COMPLETE on a staged poster image, log raw result to POSTERS_RAW atomically,
+    """Call AI_COMPLETE on a staged poster image, log raw result to EXTRACTIONS_RAW atomically,
     and return parsed dict. The write-then-read pattern is intentional — ai_complete()
     executes server-side, so the result is captured by writing to table first, then
     reading back by file_name (UUID, guaranteed unique)."""
@@ -51,9 +51,9 @@ def run_extraction(S: Session, stage_filename: str, venue_list: list[str] | None
         lit(stage_filename).alias("FILE_NAME"),
         ai_complete(MODEL, prompt, to_file(f"@{STAGE}/{stage_filename}"),
                     response_format=RESPONSE_FORMAT).alias("AI_COMPLETE")
-    ).write.mode("append").save_as_table("POSTERS_RAW")
+    ).write.mode("append").save_as_table("EXTRACTIONS_RAW")
     
-    row = S.table("POSTERS_RAW").filter(col("FILE_NAME") == stage_filename).first()
+    row = S.table("EXTRACTIONS_RAW").filter(col("FILE_NAME") == stage_filename).first()
     return json.loads(row["AI_COMPLETE"])
 
 

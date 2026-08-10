@@ -125,7 +125,7 @@ def get_or_insert_event(S: Session, event_name: str | None, event_date, venue_id
 @with_retry
 def save_poster(S: Session, file_name: str, bands: list[str], headliners: list[str], event_date, venue: str, event_name: str | None, credits: list[str], md5_hash: str, upload_type: str) -> None:
     """Orchestrates the full poster save: upserts dimensions (venue, credits, bands),
-    upserts the event, then MERGEs into POSTERS (on file_name), BANDS_EVENTS
+    upserts the event, then MERGEs into POSTERS (on file_name), BAND_EVENTS
     (on event_id + band_id) and POSTER_CREDITS (on poster_id + credit_id). All writes
     are idempotent — safe under @with_retry. Re-fetches the session from cache before
     MERGEs to pick up any reconnect from inner retries.
@@ -143,7 +143,7 @@ def save_poster(S: Session, file_name: str, bands: list[str], headliners: list[s
     poster_target.merge(poster_source, poster_target["FILE_NAME"] == poster_source["FILE_NAME"],
                         [when_not_matched().insert({"FILE_NAME": poster_source["FILE_NAME"], "EVENT_ID": poster_source["EVENT_ID"], "MD5_HASH": poster_source["MD5_HASH"], "UPLOAD_TYPE": poster_source["UPLOAD_TYPE"]})])
     if band_ids:
-        be_target = S.table("BANDS_EVENTS")
+        be_target = S.table("BAND_EVENTS")
         for bid, is_hl in band_ids:
             be_source = S.create_dataframe([[event_id, bid, is_hl]], schema=["EVENT_ID", "BAND_ID", "IS_HEADLINER"])
             be_target.merge(be_source, (be_target["EVENT_ID"] == be_source["EVENT_ID"]) & (be_target["BAND_ID"] == be_source["BAND_ID"]),
@@ -179,15 +179,15 @@ def upload_to_stage(S, file: BytesIO) -> str:
 
 @with_retry
 def log_processed(S: Session, file_name: str, bands: list[str], date: str, venue: str, event_name: str | None, matched_bands: list[str], inferred_date, matched_venue: str | None, normed_event_name: str | None) -> None:
-    """Log post-processed AI extraction results to POSTERS_PROCESSED for audit.
-    Stores both raw AI values and post-fuzzy-match values. Join with POSTERS_RAW
+    """Log post-processed AI extraction results to EXTRACTIONS_PROCESSED for audit.
+    Stores both raw AI values and post-fuzzy-match values. Join with EXTRACTIONS_RAW
     on file_name to isolate errors to LLM vs post-processing."""
     S.create_dataframe(
         [[file_name, json.dumps(bands), json.dumps(matched_bands), venue, matched_venue, date, inferred_date, event_name, normed_event_name]],
         schema=["file_name", "bands", "matched_bands", "venue", "matched_venue", "date", "inferred_date", "event_name", "normed_event_name"]
     ).with_column("bands", parse_json(col("bands"))) \
      .with_column("matched_bands", parse_json(col("matched_bands"))) \
-     .write.save_as_table("POSTERS_PROCESSED", mode="append", column_order="name")
+     .write.save_as_table("EXTRACTIONS_PROCESSED", mode="append", column_order="name")
 
 @with_retry
 def save_request(S: Session, request_type: str, entity_type: str, scope: str, poster_ids: list[int] | None, current_value: str | None, requested_value: str | None, notes: str | None) -> None:
