@@ -2,7 +2,7 @@ import streamlit as st
 from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col, when_not_matched, lit, call_builtin, parse_json
 from core.config import DB, SC, STAGE, IMG_FORMAT
-import json, uuid, functools
+import json, uuid, functools, inspect
 from io import BytesIO
 from cryptography.hazmat.primitives import serialization
 
@@ -71,15 +71,25 @@ def _reconnect() -> Session:
 def with_retry(fn):
     """Decorator for DB functions whose first arg is a Session. On any exception,
     reconnects and retries once with a fresh session. All db.py functions that
-    touch Snowflake should be decorated with this."""
+    touch Snowflake should be decorated with this.
+
+    The retry has to substitute the fresh session wherever the caller put it. An earlier version
+    always rebuilt the call as `fn(S, *args[1:], **kwargs)`, which breaks when the session was
+    passed by keyword: `args` is then empty, so `S` went in positionally *and* stayed in kwargs,
+    and the retry died with "got multiple values for argument 'S'" — masking the original error
+    that triggered it. `save_poster` is called that way from views/upload.py, so its retry path
+    was never actually functional."""
+    session_param = next(iter(inspect.signature(fn).parameters))
+
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         try:
             return fn(*args, **kwargs)
         except Exception:
             S = _reconnect()
-            new_args = (S,) + args[1:]
-            return fn(*new_args, **kwargs)
+            if args:
+                return fn(S, *args[1:], **kwargs)
+            return fn(**{**kwargs, session_param: S})
     return wrapper
 
 @with_retry
