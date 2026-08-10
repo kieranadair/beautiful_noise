@@ -54,6 +54,10 @@ with left:
     # --- File uploader ---
     img = st.file_uploader("Upload a gig poster", type=["jpg", "jpeg", "png", "webp", "pdf"], key=f"uploader_{ss['upload_key']}", label_visibility="collapsed", disabled="result" in ss)
 
+    # Sits with the uploader rather than the details form — this is guidance about *which file to
+    # pick*, so it belongs at the moment of choosing, not once the file is already in.
+    st.caption(":material/document_scanner: Scans and original files make the best archive copies. Photos of posters out in the wild are welcome too — just try to get them flat and square-on.")
+
     if "upload_error" in ss:
         st.error(ss.pop("upload_error"))
 
