@@ -78,7 +78,7 @@ with left:
     with st.form(f"poster_details_{ss['upload_key']}"):
         st.subheader("Poster Details")
         if has_result and not ss.get("saved"):
-            st.info("These details were extracted by AI — please review and edit before saving.")
+            st.info("Form populated — check before submitting")
         headliners = st.multiselect("Headliners", options=band_options, default=r.get("matched_headliners", []), accept_new_options=True, disabled=form_disabled)
         supports = st.multiselect("Support Acts", options=band_options, default=r.get("matched_supports", []), accept_new_options=True, disabled=form_disabled)
         event_date = st.date_input("Event Date", value=r.get("inferred_date"), format="DD/MM/YYYY", disabled=form_disabled)
