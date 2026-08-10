@@ -1,6 +1,6 @@
 ### What is Beautiful Noise?
 
-A living, community-driven archive of gig posters from Narrm's live music scene. It's purpose is to document and preserve them for the future.
+A living, community-driven archive of gig posters from Narrm's live music scene. Its purpose is to document and preserve them for the future.
 
 ### How do I upload a poster?
 
@@ -8,7 +8,7 @@ Click **Archive a poster** and upload the image, we'll scan it and pull out the 
 
 ### Does the poster designer/photographer/illustrator need to be credited?
 
-At it's core, Beautiful Noise is about celebrating for the people who *make* gig posters — designers, photographers, and illustrators. Their names should be added to the "Poster by" section of the upload form to make sure they're properly credited.
+At its core, Beautiful Noise is about celebrating the people who *make* gig posters — designers, photographers, and illustrators. Their names should be added to the "Poster by" section of the upload form to make sure they're properly credited.
 
 ### The scanner got something wrong. What do I do?
 
@@ -43,4 +43,4 @@ Pick your poster, choose what you need, and submit — every request is reviewed
 
 ### Are posters limited to only Narrm/Melbourne?
 
-Yes. Beautiful Noise is specifically about documenting the designs from Narrm's music scene. It operates on a small budget, so we need to keep it's scope realistic. That said, if you would like to start a similar archive for your city, reach out and we'll give you the code to duplicate this platform there.
+Yes. Beautiful Noise is specifically about documenting the designs from Narrm's music scene. It operates on a small budget, so we need to keep its scope realistic. That said, if you would like to start a similar archive for your city, reach out and we'll give you the code to duplicate this platform there.

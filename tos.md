@@ -1,6 +1,6 @@
 ## Beautiful Noise — Terms of Service
 
-Last Updated: [DATE]
+Last Updated: 10 August 2026
 
 ### The Short Version
 
@@ -45,13 +45,15 @@ Content in the Beautiful Noise archive is made available under the **Creative Co
 
 ### 5. Copyright Complaints and Takedowns
 
-If you are a copyright holder and believe content on Beautiful Noise infringes your rights, please contact us at **[EMAIL]** with:
-- A description of the copyrighted work
-- The URL or file name of the content in question
-- Your contact information
-- A statement that you are the rights holder or authorised to act on their behalf
+If you are a copyright holder and believe content on Beautiful Noise infringes your rights, use the [Contact](/contact_page) page. Find the poster, choose **Request a poster takedown**, and confirm that you are the rights holder — you can include multiple posters in a single request.
 
-We will review all requests promptly and remove infringing content where appropriate.
+In the notes field, please include:
+- A description of the copyrighted work
+- A statement that you are the rights holder or are authorised to act on their behalf
+
+If you would rather the poster stayed in the archive but properly credited, the same page lets you **authorise** it as the rights holder, or correct the poster credits.
+
+Every request is reviewed by a human, and we will remove infringing content where appropriate. Approved changes appear in the gallery automatically. The form does not collect contact details, so if you need a reply — or if you can't find the poster in question — message us on Instagram at **[@beautifulnoise.melbourne](https://www.instagram.com/beautifulnoise.melbourne)**.
 
 ### 6. Termination
 
@@ -75,4 +77,4 @@ These Terms are governed by the laws of Victoria, Australia.
 
 ### 11. Contact
 
-If you have questions about these Terms, please contact us at **[EMAIL]**.
+If you have questions about these Terms, please message us on Instagram at **[@beautifulnoise.melbourne](https://www.instagram.com/beautifulnoise.melbourne)**.
