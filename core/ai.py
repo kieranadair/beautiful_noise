@@ -6,6 +6,30 @@ from core.config import STAGE, MODEL
 from snowflake.snowpark import Session
 
 
+class ExtractionUnavailable(Exception):
+    """The AI scan couldn't run. Carries a message that is safe to show a visitor verbatim —
+    never the raw Snowflake error, which can name internal objects."""
+
+
+# Shown when we've hit the monthly AI spend cap. The per-user quota resets on the UTC calendar
+# month, so "the 1st" is right to within a few hours in Melbourne.
+QUOTA_MESSAGE = "Poster scanning is paused this month. It resets on the 1st — please try again then."
+GENERIC_MESSAGE = "Poster scanning is unavailable right now — please try again in a few minutes."
+
+# Snowflake doesn't publish a stable error code for a per-user AI quota block; the docs promise
+# only "a domain-appropriate error that identifies the cause (quota exhausted)". So match on
+# wording, not a code, and treat anything unrecognised as a generic outage — either way the
+# visitor gets a sentence instead of a stack trace. A resource-monitor warehouse suspension also
+# says "quota", which lands on the same message and is the behaviour we want: both mean the
+# monthly cap stopped us.
+_CAP_MARKERS = ("quota", "budget", "exceeded")
+
+
+def _user_message(exc: Exception) -> str:
+    text = str(exc).lower()
+    return QUOTA_MESSAGE if any(m in text for m in _CAP_MARKERS) else GENERIC_MESSAGE
+
+
 PROMPT_BASE = """Look at this image and do two things:
 
 1. Determine whether this is a gig, concert, or music event poster. Set is_valid to true if it is, false if not.
@@ -50,12 +74,19 @@ def run_extraction(S: Session, stage_filename: str, venue_list: list[str] | None
     executes server-side, so the result is captured by writing to table first, then
     reading back by file_name (UUID, guaranteed unique)."""
     prompt = _build_prompt(venue_list or [])
-    S.range(1).select(
-        lit(stage_filename).alias("FILE_NAME"),
-        ai_complete(MODEL, prompt, to_file(f"@{STAGE}/{stage_filename}"),
-                    response_format=RESPONSE_FORMAT).alias("AI_COMPLETE")
-    ).write.mode("append").save_as_table("EXTRACTIONS_RAW")
-    
+    # Only the AI_COMPLETE call is wrapped. This is where the monthly spend cap, an unavailable
+    # model, and warehouse trouble all surface, and those are worth turning into a calm message.
+    # The read-back and json.loads below are deliberately left bare: if those break it's a bug in
+    # this app, and burying it under "try again in a few minutes" would hide it.
+    try:
+        S.range(1).select(
+            lit(stage_filename).alias("FILE_NAME"),
+            ai_complete(MODEL, prompt, to_file(f"@{STAGE}/{stage_filename}"),
+                        response_format=RESPONSE_FORMAT).alias("AI_COMPLETE")
+        ).write.mode("append").save_as_table("EXTRACTIONS_RAW")
+    except Exception as e:
+        raise ExtractionUnavailable(_user_message(e)) from e
+
     row = S.table("EXTRACTIONS_RAW").filter(col("FILE_NAME") == stage_filename).first()
     return json.loads(row["AI_COMPLETE"])
 

@@ -4,7 +4,7 @@ from io import BytesIO
 import streamlit as st
 from core.config import STAGE, NAV_BTN_WIDTH
 from core.db import get_session, get_all_posters, save_poster, upload_to_stage, log_processed
-from core.ai import run_extraction, is_valid_poster, parse_extraction
+from core.ai import run_extraction, is_valid_poster, parse_extraction, ExtractionUnavailable
 from core.utils import normalise, fuzzy_match, infer_date, preprocess_image, pdf_to_image_bytes, ImageRejected, get_poster_vars, prepare_review_defaults, prepare_save_data, check_duplicate_md5, check_semantic_duplicate
 
 # ---------------------------------------------------------------------------
@@ -188,7 +188,15 @@ with right:
             target = upload_to_stage(S, ss["processed_img"])
 
             st.write("Scanning the band names...")
-            result = run_extraction(S, target, venue_list=all_venues)
+            # The scan can be capped (monthly AI spend limit) or briefly unavailable. Both are
+            # our problem, not the visitor's, so they get a plain sentence via the same
+            # upload_error path as a rejected image rather than a stack trace.
+            try:
+                result = run_extraction(S, target, venue_list=all_venues)
+            except ExtractionUnavailable as e:
+                ss["upload_error"] = str(e)
+                reset_upload()
+                st.rerun()
             if not is_valid_poster(result):
                 ss["upload_error"] = "That doesn't look like a gig poster — please try again."
                 bump_upload_key()
