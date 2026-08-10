@@ -39,6 +39,25 @@ COMMUNITY_UPLOAD_EXPLAINER = (
 )
 
 # ---------------------------------------------------------------------------
+# Poster deep-linking (?poster=<id>)
+# ---------------------------------------------------------------------------
+# A single source of truth drives the detail dialog: the `poster` query param. Clicking a poster
+# sets it; arriving on a shared link already has it. Both paths then run the same code, so the
+# dialog can't get out of step with the URL. `poster` already means "this poster" app-wide —
+# show_poster() passes it to the contact page, which reads it to preselect (contact_page.py).
+
+def clear_poster_param() -> None:
+    """Drop ?poster= so closing the dialog resets the URL, ready for the next poster."""
+    if "poster" in st.query_params:
+        del st.query_params["poster"]
+
+def poster_label(poster: dict) -> str:
+    """Accessible label for the invisible overlay button. CSS hides it visually, but screen
+    readers still announce it, so it must be escaped like any other widget label."""
+    names = poster["HEADLINERS"] or poster["BANDS"]
+    return f"View {md_escape(', '.join(names))} at {md_escape(poster['VENUE_NAME'])}"
+
+# ---------------------------------------------------------------------------
 # Fragment: poster grid (filters, thumbnails, pagination)
 # ---------------------------------------------------------------------------
 
@@ -83,8 +102,29 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
     # --- Thumbnail grid ---
     visible_posters = filtered_posters[:ss["limit"]]
 
-    st.caption(":material/visibility: Click the eye to view poster details")
-    st.space("small")
+    # Make the poster itself the click target. Each card is a keyed container (Streamlit turns
+    # `key` into an `st-key-<key>` class) holding the image plus a full-bleed transparent button
+    # laid over it. One attribute selector styles every card, so this stays a single CSS block
+    # rather than one rule per poster. A *button* — not a link — is what makes this work: a click
+    # is an ordinary rerun, so it never navigates, never starts a fresh session, and never loses
+    # pagination or filter state. Any href-based approach reloads the app and drops both.
+    primary = st.get_option("theme.primaryColor")
+    st.html(
+        "<style>"
+        '[class*="st-key-poster-card-"]{position:relative;cursor:pointer;}'
+        # The button's element wrapper is what carries the flow height, so position that (not just
+        # the <button>) to keep the card's height equal to the image's.
+        '[class*="st-key-poster-card-"] [data-testid="stElementContainer"]:has(button)'
+        "{position:absolute;inset:0;z-index:2;margin:0;}"
+        '[class*="st-key-poster-card-"] button{width:100%;height:100%;opacity:0;cursor:pointer;}'
+        # Hover affordance — the actual fix for "clicking this is confusing".
+        '[class*="st-key-poster-card-"] [data-testid="stImage"]{transition:filter .15s ease;}'
+        '[class*="st-key-poster-card-"]:hover [data-testid="stImage"]{filter:brightness(0.88);}'
+        # Focus ring goes on the card: the button itself is transparent, so its own ring is invisible.
+        f'[class*="st-key-poster-card-"]:has(button:focus-visible)'
+        f"{{outline:3px solid {primary};outline-offset:3px;}}"
+        "</style>"
+    )
 
     for row_start in range(0, len(visible_posters), GALLERY_COLUMNS):
         cols = st.columns(GALLERY_COLUMNS, gap="medium")
@@ -93,11 +133,16 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
             if idx < len(visible_posters):
                 o = visible_posters[idx]
                 with c.container():
-                    st.image(o["URL"])
-                    with st.container(horizontal=True, vertical_alignment="center", gap="small"):
-                        if st.button(" ", type="tertiary", icon=":material/visibility:", key=f"view_{o['POSTER_ID']}", help="Click to view"): show_poster(o)
-                        if o["UPLOAD_TYPE"] == "RIGHTS_HOLDER":
-                            st.markdown(":material/check_circle:")
+                    with st.container(key=f"poster-card-{o['POSTER_ID']}"):
+                        st.image(o["URL"])
+                        # Falls back to a visible text button under the poster if the CSS above
+                        # ever stops matching — degraded, but still fully usable.
+                        if st.button(poster_label(o), key=f"view_{o['POSTER_ID']}", type="tertiary"):
+                            st.query_params["poster"] = str(o["POSTER_ID"])
+                            st.rerun()
+                    # Outside the keyed card, so it can never sit over the button's hit area.
+                    if o["UPLOAD_TYPE"] == "RIGHTS_HOLDER":
+                        st.markdown(":material/check_circle:")
         st.space("small")
 
     # --- Pagination ---
@@ -111,7 +156,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
 # Fragment: poster detail dialog
 # ---------------------------------------------------------------------------
 
-@st.dialog("Poster details", width="large", icon=":material/visibility:")
+@st.dialog("Poster details", width="large", icon=":material/visibility:", on_dismiss=clear_poster_param)
 def show_poster(poster):
     left, right = st.columns([1, 1])
     with left:
@@ -149,5 +194,17 @@ months = month_range(date_min, date_max)
 primary = st.get_option("theme.primaryColor")
 secondary = st.get_option("theme.secondaryBackgroundColor")
 st.subheader(f'Browse :color[{len(all_posters)} posters]{{background={primary} foreground={secondary}}} for {len(all_bands)} bands by {len(all_credits)} creators at {len(all_venues)} venues')
+
+# Open the detail dialog whenever ?poster=<id> is set — whether a click put it there or someone
+# followed a shared link. Runs outside the fragment so it survives fragment-scoped reruns.
+# Query params are always strings, hence the str() comparison.
+if (requested_poster := st.query_params.get("poster")):
+    match = next((p for p in all_posters if str(p["POSTER_ID"]) == requested_poster), None)
+    if match:
+        show_poster(match)
+    else:
+        # Hand-edited or stale id (e.g. the poster has since been taken down) — drop it and
+        # render the gallery as normal rather than erroring.
+        clear_poster_param()
 
 poster_grid(all_posters, all_bands, all_venues, all_credits, months)
