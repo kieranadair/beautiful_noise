@@ -1,7 +1,7 @@
 import streamlit as st
 from snowflake.snowpark import Session
 from snowflake.snowpark.functions import col, when_not_matched, lit, call_builtin, parse_json
-from config import DB, SC, STAGE, IMG_FORMAT
+from core.config import DB, SC, STAGE, IMG_FORMAT
 import json, uuid, functools
 from io import BytesIO
 from cryptography.hazmat.primitives import serialization

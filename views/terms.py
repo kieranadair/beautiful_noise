@@ -1,5 +1,5 @@
 import streamlit as st
-from config import NAV_BTN_WIDTH
+from core.config import NAV_BTN_WIDTH, CONTENT_DIR
 
 
 # ---------------------------------------------------------------------------
@@ -7,9 +7,9 @@ from config import NAV_BTN_WIDTH
 # ---------------------------------------------------------------------------
 
 if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
-    st.switch_page("upload_page.py")
+    st.switch_page("views/upload.py")
 if st.button("VIEW GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
-    st.switch_page("gallery_page.py")
+    st.switch_page("views/gallery.py")
 
 st.divider()
 
@@ -17,4 +17,4 @@ st.divider()
 # Terms of Service content (rendered from tos.md)
 # ---------------------------------------------------------------------------
 
-st.write(open("tos.md").read())
+st.write((CONTENT_DIR / "tos.md").read_text(encoding="utf-8"))

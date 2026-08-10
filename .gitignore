@@ -15,3 +15,6 @@ __pycache__/
 
 # Environment
 .env
+
+# Screenshots dropped into the repo while debugging the UI
+Screenshot*.png

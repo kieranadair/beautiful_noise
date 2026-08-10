@@ -1,4 +1,9 @@
+from pathlib import Path
 import streamlit as st
+
+# User-facing copy (faq.md, tos.md) lives in content/. Resolved from this file's location rather
+# than the working directory, so reads work no matter where `streamlit run` is invoked from.
+CONTENT_DIR = Path(__file__).resolve().parent.parent / "content"
 
 DB    = st.secrets["connections"]["snowflake"]["database"]
 SC    = st.secrets["connections"]["snowflake"]["schema"]

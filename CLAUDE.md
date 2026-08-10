@@ -19,7 +19,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Requires `.streamlit/secrets.toml` (gitignored, present locally) with a `[connections.snowflake]` block (account, user, role, warehouse, database, schema, key-pair auth fields `private_key`/`private_key_passphrase`) and an `[app]` block with `stage`. **This single secrets file is used for both local dev and production** — Streamlit Community Cloud copies its contents into its own secrets manager for the deployed app. There is no local/mocked Snowflake — the app always talks to the live Snowflake instance for both data and AI extraction. (The Cortex `model` is no longer a secret — it's a hardcoded constant in `config.py` so a model swap ships via git push, not a manual Cloud-secrets edit; a leftover `[app] model` key in secrets is ignored.)
+Requires `.streamlit/secrets.toml` (gitignored, present locally) with a `[connections.snowflake]` block (account, user, role, warehouse, database, schema, key-pair auth fields `private_key`/`private_key_passphrase`) and an `[app]` block with `stage`. **This single secrets file is used for both local dev and production** — Streamlit Community Cloud copies its contents into its own secrets manager for the deployed app. There is no local/mocked Snowflake — the app always talks to the live Snowflake instance for both data and AI extraction. (The Cortex `model` is no longer a secret — it's a hardcoded constant in `core/config.py` so a model swap ships via git push, not a manual Cloud-secrets edit; a leftover `[app] model` key in secrets is ignored.)
 
 There is no test suite, linter, or CI config in this repo — verify changes by running the app and exercising the relevant flow in the browser.
 
@@ -30,27 +30,41 @@ There is no test suite, linter, or CI config in this repo — verify changes by 
 | File | When to load |
 |---|---|
 | `.context/schema.md` | Writing queries, changing schema, working with roles/grants |
-| `.context/upload-flow.md` | Touching `ai.py`, `upload_page.py`, or the extraction/validation pipeline |
-| `.context/gallery.md` | Modifying `gallery_page.py`, filtering, poster dialog |
-| `.context/contact-page.md` | Working on `contact_page.py` or any of its request flows |
-| `.context/session-management.md` | Debugging connections, changing `db.py`, caching, retry logic |
+| `.context/upload-flow.md` | Touching `core/ai.py`, `views/upload.py`, or the extraction/validation pipeline |
+| `.context/gallery.md` | Modifying `views/gallery.py`, filtering, poster dialog |
+| `.context/contact-page.md` | Working on `views/contact.py` or any of its request flows |
+| `.context/session-management.md` | Debugging connections, changing `core/db.py`, caching, retry logic |
 | `.context/admin-app.md` | Working on `admin.py`, mutation handlers, staging, push-to-prod |
 | `.context/data-flow.md` | Understanding function call chains, Snowpark interactions, table write/read paths |
 | `.context/error-handling.md` | Exception flows, retry logic, failure recovery, orphan cleanup, debugging |
 | `.context/performance.md` | Caching strategy, query patterns, warehouse wake-up, scaling limits |
 | `.context/legal.md` | ToS, licensing, robots.txt |
 
-These are a snapshot in time and can drift from the actual code — e.g. `schema.md`/`contact-page.md` describe a standalone `MISSING_BAND` request flow that isn't in the current `contact_page.py` (it was folded into the `LINEUP_EDIT` flow, entity_type `BILLING`). Treat `.context/` as a fast-orientation aid, not ground truth — check the actual source for anything load-bearing.
+These are a snapshot in time and can drift from the actual code — e.g. `schema.md`/`contact-page.md` describe a standalone `MISSING_BAND` request flow that isn't in the current `views/contact.py` (it was folded into the `LINEUP_EDIT` flow, entity_type `BILLING`). Treat `.context/` as a fast-orientation aid, not ground truth — check the actual source for anything load-bearing.
 
 ## Architecture — community app (this repo)
 
-Flat, single-directory Streamlit multipage app. `app.py` is the entry point; it sets page config/theme and registers pages via `st.navigation` — `gallery_page.py` (browse/filter), `upload_page.py` (upload + AI review + save), `contact_page.py` (correction/takedown/attribution requests), `terms_of_service.py`.
+Streamlit multipage app in three directories. `app.py` stays at the repo root (Community Cloud runs it); it sets page config/theme and registers pages via `st.navigation`:
+
+```
+app.py       entry point — theme, navigation, header, footer
+views/       one script per page: gallery.py (browse/filter), upload.py (upload + AI review +
+             save), contact.py (correction/takedown/attribution requests), terms.py
+core/        everything that isn't UI: config.py, db.py, ai.py, utils.py (a package —
+             `from core.db import ...`)
+content/     user-facing copy read at runtime: faq.md, tos.md (resolve via `CONTENT_DIR`
+             from core/config.py, never a bare `open()` — that depends on the working directory)
+static/      served at /app/static/ when enableStaticServing is on. The name is fixed by
+             Streamlit; a differently-named folder is silently not served.
+```
+
+Page **URL slugs are pinned with `url_path`** in `app.py` (`upload_page`, `contact_page`, `terms_of_service`) so they survive file renames. Slugs are otherwise inferred from filenames, and the copy in `app.py`/`views/upload.py`/`content/*.md` links to them as literal paths (`/contact_page`) — changing a slug breaks those links and any URL a visitor has shared. Don't name the pages directory `pages/`: that triggers Streamlit's automatic page discovery, which is a separate mechanism from `st.navigation`.
 
 Module responsibilities (each page imports from these — keep logic there, not duplicated in pages):
-- `config.py` — reads `st.secrets` into module-level constants (`DB`, `SC`, `STAGE`, `MODEL`, `IMG_FORMAT`, `NAV_BTN_WIDTH`).
-- `db.py` — all Snowflake/Snowpark access. `get_session()` builds a key-pair-authenticated session (RSA, bypasses MFA — see below), cached with `@st.cache_resource`. Every function that touches Snowflake is wrapped in `@with_retry`, which on any exception clears the cached session, reconnects, and retries once. Writes are MERGE-based upserts (`get_or_insert`, `get_or_insert_event`) so they're idempotent and safe to retry. `get_all_posters` is `@st.cache_data`-cached (no TTL) and must be explicitly `.clear()`-ed after any write that should be reflected in the gallery.
-- `ai.py` — builds the extraction prompt (including the current venue list, so the model can match against known venues) and calls `ai_complete()` server-side in Snowflake. Uses a write-then-read pattern: the AI result is written to `POSTERS_RAW` first (since `ai_complete` executes server-side inside a `select()`), then read back by the poster's UUID filename.
-- `utils.py` — pure functions with no Snowflake/Streamlit dependency: string normalisation, RapidFuzz-based fuzzy matching, date inference from AI-extracted `MM-DD` strings (picks whichever of last/this/next year is closest to today), image preprocessing (with content-format allowlisting + pixel-bomb guards, raising `ImageRejected` on bad input), PDF-to-JPEG conversion (DPI clamped to a pixel ceiling), and client-side filtering/deduplication over the cached poster list.
+- `core/config.py` — reads `st.secrets` into module-level constants (`DB`, `SC`, `STAGE`, `MODEL`, `IMG_FORMAT`, `NAV_BTN_WIDTH`, `CONTENT_DIR`).
+- `core/db.py` — all Snowflake/Snowpark access. `get_session()` builds a key-pair-authenticated session (RSA, bypasses MFA — see below), cached with `@st.cache_resource`. Every function that touches Snowflake is wrapped in `@with_retry`, which on any exception clears the cached session, reconnects, and retries once. Writes are MERGE-based upserts (`get_or_insert`, `get_or_insert_event`) so they're idempotent and safe to retry. `get_all_posters` is `@st.cache_data`-cached (no TTL) and must be explicitly `.clear()`-ed after any write that should be reflected in the gallery.
+- `core/ai.py` — builds the extraction prompt (including the current venue list, so the model can match against known venues) and calls `ai_complete()` server-side in Snowflake. Uses a write-then-read pattern: the AI result is written to `POSTERS_RAW` first (since `ai_complete` executes server-side inside a `select()`), then read back by the poster's UUID filename.
+- `core/utils.py` — pure functions with no Snowflake/Streamlit dependency: string normalisation, RapidFuzz-based fuzzy matching, date inference from AI-extracted `MM-DD` strings (picks whichever of last/this/next year is closest to today), image preprocessing (with content-format allowlisting + pixel-bomb guards, raising `ImageRejected` on bad input), PDF-to-JPEG conversion (DPI clamped to a pixel ceiling), and client-side filtering/deduplication over the cached poster list.
 
 Data flow for an upload: image/PDF → `pdf_to_image_bytes` (PDF only) → `preprocess_image` (rejects malformed/oversized/unexpected-format files via `ImageRejected`) → MD5 dedup check against cached posters → `upload_to_stage` (Snowflake stage) → `run_extraction` (AI_COMPLETE, logged to `POSTERS_RAW`) → `prepare_review_defaults` (normalise + fuzzy-match against existing bands/venues + infer full date) → logged to `POSTERS_PROCESSED` for audit → user reviews/edits in a form (multiselects: Headliners, Support Acts, Credits) → semantic duplicate check (same bands+venue+date) → `save_poster` (upserts VENUES/BANDS/CREDITS/EVENTS, MERGEs POSTERS and BANDS_EVENTS with `IS_HEADLINER` per band, re-fetches poster_id and MERGEs POSTER_CREDITS) → `get_all_posters` cache cleared.
 
@@ -76,7 +90,7 @@ Dimension tables `VENUES`, `BANDS`, `CREDITS` (upserted via MERGE, all-caps text
 
 There is **no working local Snowflake CLI connection** in this environment. A SnowSQL config exists at `~/.snowsql/config` with a saved connection (account `HEPCWGZ-QM48128`, user `kieranadair`) but it points at an **expired free-trial account** — it fails with "Your free trial has ended and all of your virtual warehouses have been suspended." Do not assume this connection works; verify before relying on it.
 
-`.streamlit/secrets.toml` holds the app's runtime credential (service account `BN_APP_SVC`, RSA key-pair auth, role `BEAUTIFUL_NOISE_APP`). Connect directly with `snowflake-snowpark-python` + `cryptography` (same PEM→DER pattern as `get_session()` in `db.py`) via a throwaway script — there's no MCP or CLI wired up, so this is the only working path.
+`.streamlit/secrets.toml` holds the app's runtime credential (service account `BN_APP_SVC`, RSA key-pair auth, role `BEAUTIFUL_NOISE_APP`). Connect directly with `snowflake-snowpark-python` + `cryptography` (same PEM→DER pattern as `get_session()` in `core/db.py`) via a throwaway script — there's no MCP or CLI wired up, so this is the only working path.
 
 **As of 2026-07-12, `BEAUTIFUL_NOISE_APP` was temporarily granted ownership of the `BEAUTIFUL_NOISE.DATA` and `.STAGING` schemas** (normally it's least-privilege — `SELECT`+`INSERT` only) so DDL work can happen through this one credential without minting new ones. This means schema/DDL changes are currently possible through `secrets.toml` directly. **This is meant to be temporary** — it should be reverted to least-privilege once active schema work winds down (revert script covers this; see memory `project-snowflake-temp-ddl-privileges`). If a session finds this grant still active a while after schema work seems to have concluded, flag it to the user rather than assuming it's fine to leave.
 
@@ -86,11 +100,11 @@ This app leans on fairly new Streamlit and Snowflake Cortex surface (`st.dialog`
 
 ## Key design decisions
 
-- **Cheap multimodal Cortex model** for extraction (currently `llama4-maverick`, set in `config.py`) — a budget vision model is plenty for this simple structured-extraction task; premium models (Claude/GPT-4.1) aren't worth several× the cost here. Must be image-capable (the call passes `to_file()`); any AI_COMPLETE model supports `response_format`. `llama4-scout` was the original choice but was deprecated 2026-07-08.
-- **Snowpark DataFrame API** over raw SQL in `db.py` — don't use `S.sql()` unless there's no Snowpark equivalent (the one exception in this repo's scope is stage-file `REMOVE`, which has no DataFrame API).
+- **Cheap multimodal Cortex model** for extraction (currently `llama4-maverick`, set in `core/config.py`) — a budget vision model is plenty for this simple structured-extraction task; premium models (Claude/GPT-4.1) aren't worth several× the cost here. Must be image-capable (the call passes `to_file()`); any AI_COMPLETE model supports `response_format`. `llama4-scout` was the original choice but was deprecated 2026-07-08.
+- **Snowpark DataFrame API** over raw SQL in `core/db.py` — don't use `S.sql()` unless there's no Snowpark equivalent (the one exception in this repo's scope is stage-file `REMOVE`, which has no DataFrame API).
 - User always confirms/edits AI extractions before saving — nothing is auto-committed from the LLM.
-- **All text stored UPPER CASE** in the DB (`normalise()` in `utils.py`).
-- **Escape user-controlled text at every Streamlit markdown sink** (`st.write`/`header`/`subheader`/`markdown`/`info`/`error` and widget *labels* — not plain-text widget *options*) with `md_escape()` from `utils.py`. Uploads are anonymous and band/venue/event/credit names are free text (typed or LLM-extracted), so unescaped names inject live links, tracking-pixel images, and layout defacement into the gallery/contact pages. Output-encode at the sink — **never** strip at input, since real names legitimately contain markdown chars (`!!!`, `SUNN O)))`). HTML/JS is already safe (`unsafe_allow_html` stays off for user data); this closes the markdown-syntax gap.
+- **All text stored UPPER CASE** in the DB (`normalise()` in `core/utils.py`).
+- **Escape user-controlled text at every Streamlit markdown sink** (`st.write`/`header`/`subheader`/`markdown`/`info`/`error` and widget *labels* — not plain-text widget *options*) with `md_escape()` from `core/utils.py`. Uploads are anonymous and band/venue/event/credit names are free text (typed or LLM-extracted), so unescaped names inject live links, tracking-pixel images, and layout defacement into the gallery/contact pages. Output-encode at the sink — **never** strip at input, since real names legitimately contain markdown chars (`!!!`, `SUNN O)))`). HTML/JS is already safe (`unsafe_allow_html` stays off for user data); this closes the markdown-syntax gap.
 - **Never build SQL via `S.sql()` + f-strings.** All DB access goes through the Snowpark DataFrame API (`create_dataframe`/`merge`/`col()==value`/`lit()`), which escapes values as data literals — this is what keeps SQL injection closed given the free-text inputs. `S.sql()` with interpolated user text would reopen it.
 - No third-party UI component packages — native Streamlit only (or `st.html` with inline JS).
 - **RSA key-pair authentication** (not password) for the service account — required because MFA enforcement on the Snowflake account breaks non-interactive password auth from Streamlit Cloud. See `.context/session-management.md` for the PEM→DER conversion details in `get_session()`.

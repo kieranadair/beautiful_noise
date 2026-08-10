@@ -1,4 +1,5 @@
 import streamlit as st
+from core.config import CONTENT_DIR
 
 
 st.set_page_config(layout="wide", page_title="Beautiful Noise", page_icon=":material/music_note:")
@@ -13,10 +14,13 @@ st.html(
 
 # Set up navigation. position="hidden" drops the nav widget outright — nothing else in the app
 # writes to the sidebar, so no sidebar renders at all and each page supplies its own nav buttons.
-gallery = st.Page("gallery_page.py", title="Gallery")
-upload  = st.Page("upload_page.py",  title="Upload")
-contact = st.Page("contact_page.py", title="Contact")
-terms_of_service = st.Page("terms_of_service.py", title="Terms of Service")
+# url_path pins each slug to what it was before the files moved into views/. Without it the slug
+# is inferred from the filename, so renaming would silently break every /contact_page and
+# /terms_of_service link in the copy — and any URL a visitor has already shared.
+gallery = st.Page("views/gallery.py", title="Gallery")
+upload  = st.Page("views/upload.py",  title="Upload", url_path="upload_page")
+contact = st.Page("views/contact.py", title="Contact", url_path="contact_page")
+terms_of_service = st.Page("views/terms.py", title="Terms of Service", url_path="terms_of_service")
 pg = st.navigation([gallery, upload, contact, terms_of_service], position="hidden")
 
 # Logo
@@ -43,7 +47,7 @@ pg.run()
 # FAQ (light, conversational help — opens a dialog from the footer)
 @st.dialog("Frequently Asked Questions", width="large")
 def show_faq():
-    st.write(open("faq.md").read())
+    st.write((CONTENT_DIR / "faq.md").read_text(encoding="utf-8"))
 
 # Footer section — flows with the page. Deliberately NOT in st.bottom: st.bottom pins to the
 # viewport, and the terms/licensing notice doesn't need to follow the reader down a long gallery.

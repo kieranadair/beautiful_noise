@@ -1,14 +1,14 @@
 import streamlit as st
-from config import NAV_BTN_WIDTH
-from db import get_session, get_all_posters
-from utils import get_filtered_posters, get_poster_vars, month_range, md_escape
+from core.config import NAV_BTN_WIDTH
+from core.db import get_session, get_all_posters
+from core.utils import get_filtered_posters, get_poster_vars, month_range, md_escape
 
 # ---------------------------------------------------------------------------
 # Navigation
 # ---------------------------------------------------------------------------
 
 if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
-    st.switch_page("upload_page.py")
+    st.switch_page("views/upload.py")
 
 st.divider()
 
@@ -44,7 +44,7 @@ COMMUNITY_UPLOAD_EXPLAINER = (
 # A single source of truth drives the detail dialog: the `poster` query param. Clicking a poster
 # sets it; arriving on a shared link already has it. Both paths then run the same code, so the
 # dialog can't get out of step with the URL. `poster` already means "this poster" app-wide —
-# show_poster() passes it to the contact page, which reads it to preselect (contact_page.py).
+# show_poster() passes it to the contact page, which reads it to preselect (views/contact.py).
 
 def clear_poster_param() -> None:
     """Drop ?poster= so closing the dialog resets the URL, ready for the next poster."""
@@ -200,7 +200,7 @@ def show_poster(poster):
         st.code(f"{st.context.url}?poster={poster['POSTER_ID']}", language=None, wrap_lines=True)
         st.space(size="medium")
         contact_label = "Authorise, submit a correction or request removal" if poster["UPLOAD_TYPE"] == "COMMUNITY" else "Submit a correction or request removal"
-        st.page_link("contact_page.py", label=contact_label, icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
+        st.page_link("views/contact.py", label=contact_label, icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
 
 # ---------------------------------------------------------------------------
 # Data: poster cache, filter options, date range

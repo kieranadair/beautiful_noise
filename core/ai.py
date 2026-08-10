@@ -2,7 +2,7 @@
 import json
 from io import BytesIO
 from snowflake.snowpark.functions import ai_complete, to_file, lit, col
-from config import STAGE, MODEL
+from core.config import STAGE, MODEL
 from snowflake.snowpark import Session
 
 

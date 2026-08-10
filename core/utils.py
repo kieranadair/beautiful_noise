@@ -4,7 +4,7 @@ from io import BytesIO
 from rapidfuzz import process, fuzz
 from PIL import Image
 import fitz
-from config import IMG_FORMAT, MAX_IMAGE_PIXELS, PDF_RENDER_DPI, ALLOWED_IMAGE_FORMATS
+from core.config import IMG_FORMAT, MAX_IMAGE_PIXELS, PDF_RENDER_DPI, ALLOWED_IMAGE_FORMATS
 
 # Decode-time backstop: PIL raises DecompressionBombError once an image exceeds
 # 2x this during actual decode. We also check img.size up front (see
