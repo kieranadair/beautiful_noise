@@ -1,4 +1,3 @@
-import json
 import streamlit as st
 from core.config import NAV_BTN_WIDTH
 from core.db import get_session, get_all_posters
@@ -58,59 +57,6 @@ def poster_label(poster: dict) -> str:
     names = poster["HEADLINERS"] or poster["BANDS"]
     return f"View {md_escape(', '.join(names))} at {md_escape(poster['VENUE_NAME'])}"
 
-COPY_LABEL = "Share poster"
-
-def copy_link_button(url: str, poster_id) -> None:
-    """One-click 'copy to clipboard' button for a poster's share URL.
-
-    Streamlit has no native clipboard action, so this is the sanctioned escape hatch: st.html with
-    inline JS (see CLAUDE.md). It can't be an st.button — the Clipboard API only works inside the
-    user-gesture that triggered it, and a Streamlit button's handler runs on the *rerun* after the
-    click, by which point the gesture is gone and the write is blocked.
-
-    Both interpolated values go through json.dumps, so they land as JS string literals rather than
-    as concatenated source. The values here are app-generated (st.context.url and an integer id),
-    but building JS by raw f-string is a habit worth not forming.
-    """
-    btn_id = f"bn-share-{poster_id}"
-    st.html(
-        # Styled to read as a link, not a button — it sits directly above the contact page_link
-        # and should match its weight and size. Font size is pinned to 1rem (== theme
-        # baseFontSize) rather than inherited: `font: inherit` picked up a much larger size from
-        # whatever wrapper st.html lands in, and rendered at roughly heading scale.
-        "<style>"
-        ".bn-share{display:inline-flex;align-items:center;gap:.5rem;font-family:inherit;"
-        "font-size:1rem;font-weight:400;line-height:1.6;color:inherit;background:transparent;"
-        "border:none;padding:0;margin:0;cursor:pointer;}"
-        ".bn-share svg{width:1.15em;height:1.15em;flex:none;}"
-        ".bn-share:hover{opacity:.7;}"
-        "</style>"
-        f"<button class='bn-share' id='{btn_id}' type='button'>"
-        "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor'"
-        " stroke-width='2' stroke-linecap='round' aria-hidden='true'>"
-        "<path d='M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5'/>"
-        "<path d='M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5'/></svg>"
-        f"<span aria-live='polite'>{COPY_LABEL}</span></button>"
-        "<script>(function(){"
-        f"var b=document.getElementById({json.dumps(btn_id)}),u={json.dumps(url)},"
-        f"L={json.dumps(COPY_LABEL)};"
-        "if(!b||b.dataset.bound)return;b.dataset.bound='1';"
-        "var s=b.querySelector('span');"
-        "b.addEventListener('click',function(){"
-        "var done=function(ok){s.textContent=ok?'Link copied':'Copy failed';"
-        "setTimeout(function(){s.textContent=L;},2000);};"
-        "if(navigator.clipboard&&window.isSecureContext){"
-        "navigator.clipboard.writeText(u).then(function(){done(true);},function(){done(false);});"
-        "return;}"
-        # Fallback for non-secure contexts (e.g. plain-http local runs), where the Clipboard API
-        # is unavailable. Deprecated, but still widely supported.
-        "try{var t=document.createElement('textarea');t.value=u;t.style.position='fixed';"
-        "t.style.opacity='0';document.body.appendChild(t);t.select();"
-        "var ok=document.execCommand('copy');document.body.removeChild(t);done(ok);}"
-        "catch(e){done(false);}"
-        "});})();</script>",
-        unsafe_allow_javascript=True,
-    )
 
 # ---------------------------------------------------------------------------
 # Fragment: poster grid (filters, thumbnails, pagination)
@@ -249,8 +195,16 @@ def show_poster(poster):
         if poster["UPLOAD_TYPE"] == "RIGHTS_HOLDER": st.badge("Shared with creator's permission", icon=":material/check_circle:", color="grey", help=RIGHTS_HOLDER_HELP)
         else: st.badge("Community upload", icon=":material/groups:", color="grey", help=COMMUNITY_HELP)
         # The two actions sit together as a pair, separated from the metadata above them.
+        # type="tertiary" renders the trigger as plain text with no border or background, so it
+        # matches the weight of the page_link below it. The URL stays tucked away until asked for,
+        # and st.code carries the copy control.
+        # A true one-click copy isn't reachable: Streamlit has no clipboard action, and a hand-
+        # rolled <button> can't stand in for one — st.html runs its input through DOMPurify, which
+        # strips interactive elements and event handlers. Only the <style> survives, which is why
+        # the CSS blocks elsewhere in this file work but markup does not.
         st.space(size="medium")
-        copy_link_button(f"{st.context.url}?poster={poster['POSTER_ID']}", poster["POSTER_ID"])
+        with st.popover("Share poster", icon=":material/link:", type="tertiary"):
+            st.code(f"{st.context.url}?poster={poster['POSTER_ID']}", language=None, wrap_lines=True)
         contact_label = "Authorise, submit a correction or request removal" if poster["UPLOAD_TYPE"] == "COMMUNITY" else "Submit a correction or request removal"
         st.page_link("views/contact.py", label=contact_label, icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
 
