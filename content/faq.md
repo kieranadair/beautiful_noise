@@ -18,9 +18,9 @@ Before you save, just edit it — every field on the review form is yours to cha
 
 Yes, but we take steps to ensure its use is limited and the rights of the designers are respected. When you upload a poster the image goes to a vision model which reads it and hands back: the band names, date, venue, and event name. Its use is limited to reading the posters.
 
-The archive and model are both hosted inside a private Snowflake database. We chose Snowflake because their [AI terms](https://www.snowflake.com/en/legal/compliance/snowflake-ai-trust-and-safety/) commit that inputs and outputs aren't used to train models for other customers, so your poster isn't shipped off to OpenAI, Google, Meta or anyone else to use to train image generation models.
+We use Anthropic's Claude for this. Their [commercial terms](https://www.anthropic.com/legal/commercial-terms) commit that inputs and outputs aren't used to train their models, and images are deleted from their systems within 30 days. Your poster isn't used to train image generation models, by Anthropic or anyone else.
 
-Opting for a private database and model is core to keeping the archive independent.
+Keeping the archive on infrastructure we control, with a provider that won't train on what passes through it, is core to keeping it independent.
 
 ### Who do you most want to upload posters?
 

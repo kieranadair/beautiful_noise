@@ -25,7 +25,7 @@ You retain all copyright and ownership of any content you upload to the Service.
 By uploading content, you grant Beautiful Noise a non-exclusive, royalty-free, worldwide licence to store, display, reproduce, distribute, and automatically analyse your content as part of the archive. This licence exists solely for the purpose of operating and presenting the archive.
 
 #### How your upload is processed
-When you upload a poster, the image is analysed by a vision model to extract the band names, date, venue, and event name printed on it. The archive and the model are both hosted inside a private Snowflake database — the image is not sent to a third-party AI provider, and under Snowflake's AI terms, inputs and outputs are not used to train models made available to other customers. The model's output is a suggestion only: no extracted detail is published until a person has reviewed and confirmed it. We retain a record of the model's raw output alongside the confirmed values so that errors can be traced and corrected.
+When you upload a poster, the image is analysed by a vision model to extract the band names, date, venue, and event name printed on it. The image is sent to Anthropic's API for that purpose and is not shared with any other third party. Under Anthropic's commercial terms, inputs and outputs are not used to train their models, and are deleted from their systems within 30 days. The model's output is a suggestion only: no extracted detail is published until a person has reviewed and confirmed it. We retain a record of the model's raw output alongside the confirmed values so that errors can be traced and corrected.
 
 #### Your responsibility
 By uploading a poster, you confirm that at least one of the following applies:

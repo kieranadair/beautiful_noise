@@ -26,6 +26,3 @@ CLAUDE.md
 # Deployment walkthrough — scratch notes, deliberately not part of the public repo
 DEPLOY_NOTES.md
 
-# Snowflake→Neon migration runbook — working checklist, describes the infrastructure in
-# detail. Local only, like CLAUDE.md. Delete once the migration is finished.
-MIGRATION.md
