@@ -1,3 +1,4 @@
+import logging
 import streamlit as st
 from core.config import BLANK_ICON, CONTENT_DIR
 
@@ -41,8 +42,26 @@ This project exists to change that. To pull these works off the street (and away
 """
 st.write(text)
 
-# Run pages
-pg.run()
+# Run pages.
+#
+# Wrapped so a crash inside a page shows our own words rather than Streamlit's built-in notice,
+# which mentions redacted error messages and Streamlit Cloud — neither of which means anything to
+# someone here to look at gig posters. The exception propagates out of pg.run(), so catching it
+# here covers every page without touching any of them.
+#
+# logging.exception is the load-bearing half: --client.showErrorDetails=none means the browser
+# shows nothing diagnostic, so the traceback has to reach the Railway logs or the error is simply
+# lost. Never replace this with a bare message.
+try:
+    pg.run()
+except Exception:
+    logging.exception("Unhandled error while running page: %s", getattr(pg, "title", "unknown"))
+    st.error(
+        "Oh no. This app has encountered an error. If it continues, please "
+        "[message us on Instagram](https://www.instagram.com/beautifulnoise.melbourne) "
+        "so we can investigate.",
+        icon=":material/error:",
+    )
 
 # FAQ (light, conversational help — opens a dialog from the footer)
 @st.dialog("Frequently Asked Questions", width="large")

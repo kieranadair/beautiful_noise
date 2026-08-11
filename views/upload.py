@@ -1,12 +1,11 @@
 import hashlib
 import uuid
 from pathlib import Path
-from io import BytesIO
 import streamlit as st
 from core.config import NAV_BTN_WIDTH, MODEL
 from core.db import get_all_posters, get_vocabulary, save_poster, upload_poster, log_extraction, delete_poster_file, clear_caches
 from core.ai import run_extraction, is_valid_poster, parse_extraction, ExtractionUnavailable
-from core.utils import normalise, fuzzy_match, infer_date, preprocess_image, pdf_to_image_bytes, ImageRejected, get_poster_vars, prepare_review_defaults, prepare_save_data, check_duplicate_md5, check_semantic_duplicate
+from core.utils import preprocess_image, pdf_to_image_bytes, ImageRejected, prepare_review_defaults, prepare_save_data, check_duplicate_md5, check_semantic_duplicate
 
 # ---------------------------------------------------------------------------
 # Navigation

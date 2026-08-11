@@ -122,7 +122,7 @@ if primary_poster:
 
         if submit and not permission: st.error("You must be a rights holder to submit a takedown request.")
         elif submit:
-            save_request(S, request_type="TAKEDOWN", entity_type="POSTER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
+            save_request(request_type="TAKEDOWN", entity_type="POSTER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
             st.session_state["request_submitted"] = f"Takedown request submitted. {REVIEW_NOTICE}"
             st.query_params.clear()
             st.rerun()
@@ -150,7 +150,7 @@ if primary_poster:
 
         if submit and not permission: st.error("You must be a rights holder to submit an attribution request.")
         elif submit:
-            save_request(S, request_type="ATTRIBUTION", entity_type="DESIGNER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
+            save_request(request_type="ATTRIBUTION", entity_type="DESIGNER", scope="SPECIFIC", poster_ids=all_ids, current_value=None, requested_value=None, notes=notes.strip() if notes and notes.strip() else None)
             st.session_state["request_submitted"] = f"Attribution request submitted. {REVIEW_NOTICE}"
             st.query_params.clear()
             st.rerun()
@@ -184,7 +184,7 @@ if primary_poster:
 
             if submit and not corrected_value: st.error("Please enter a corrected value.")
             elif submit:
-                save_request(S, request_type="CORRECTION", entity_type="EVENT", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=normalise(current_value) if current_value else None, requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
+                save_request(request_type="CORRECTION", entity_type="EVENT", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=normalise(current_value) if current_value else None, requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
                 st.session_state["request_submitted"] = f"Correction request submitted. {REVIEW_NOTICE}"
                 st.query_params.clear()
                 st.rerun()
@@ -243,7 +243,7 @@ if primary_poster:
                 if submit and not corrected_value: st.error("Please enter a corrected value.")
                 elif submit and scope == "SPECIFIC" and not poster_ids: st.error("Please select at least one poster.")
                 elif submit:
-                    save_request(S, request_type="CORRECTION", entity_type=entity_type, scope=scope, poster_ids=poster_ids, current_value=normalise(current_value), requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
+                    save_request(request_type="CORRECTION", entity_type=entity_type, scope=scope, poster_ids=poster_ids, current_value=normalise(current_value), requested_value=normalise(corrected_value), notes=notes.strip() if notes and notes.strip() else None)
                     st.session_state["request_submitted"] = f"Correction request submitted. {REVIEW_NOTICE}"
                     st.query_params.clear()
                     st.rerun()
@@ -267,7 +267,7 @@ if primary_poster:
 
         if submit and corrected_date == current_date: st.error("The corrected date is the same as the current date.")
         elif submit:
-            save_request(S, request_type="CORRECTION", entity_type="DATE", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=str(current_date) if current_date else None, requested_value=str(corrected_date), notes=notes.strip() if notes and notes.strip() else None)
+            save_request(request_type="CORRECTION", entity_type="DATE", scope="SPECIFIC", poster_ids=[primary_poster["POSTER_ID"]], current_value=str(current_date) if current_date else None, requested_value=str(corrected_date), notes=notes.strip() if notes and notes.strip() else None)
             st.session_state["request_submitted"] = f"Date correction submitted. {REVIEW_NOTICE}"
             st.query_params.clear()
             st.rerun()
@@ -345,7 +345,6 @@ if primary_poster:
                     })
     
                     save_request(
-                        S,
                         request_type="CORRECTION",
                         entity_type="BILLING",
                         scope="SPECIFIC",

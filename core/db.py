@@ -16,7 +16,6 @@ Two invariants worth stating up front, because breaking either fails quietly:
      which is what keeps injection closed.
 """
 
-import uuid
 from io import BytesIO
 
 import boto3
