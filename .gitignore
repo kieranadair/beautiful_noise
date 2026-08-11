@@ -1,12 +1,12 @@
 # Workspace AI context
 AGENTS.md
 .context/
-.snowflake/
 
-# Admin app (deployed as Streamlit in Snowflake, not part of public app)
-admin.py
+# Environment — every setting the app reads, including credentials
+.env
 
-# Streamlit secrets
+# Streamlit secrets. Nothing writes this any more (settings come from .env), but
+# Streamlit would still read it if present, so keep it out of the repo.
 .streamlit/secrets.toml
 
 # Python
@@ -14,15 +14,8 @@ __pycache__/
 *.pyc
 .venv/
 
-# Environment
-.env
-
 # Screenshots dropped into the repo while debugging the UI
 Screenshot*.png
 
 # Assistant guidance — local only, like .context/
 CLAUDE.md
-
-# Deployment walkthrough — scratch notes, deliberately not part of the public repo
-DEPLOY_NOTES.md
-
