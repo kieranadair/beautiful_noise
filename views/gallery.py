@@ -1,6 +1,6 @@
 import streamlit as st
 from core.config import NAV_BTN_WIDTH
-from core.db import get_session, get_all_posters
+from core.db import get_all_posters
 from core.utils import get_filtered_posters, get_poster_vars, month_range, md_escape
 
 # ---------------------------------------------------------------------------
@@ -64,6 +64,14 @@ def poster_label(poster: dict) -> str:
 
 @st.fragment
 def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
+
+    # --- Empty archive ---
+    # Guarded before the filter row, not inside it. With no posters there is nothing to
+    # filter, and the date slider below cannot render at all: `months` is empty, so
+    # `months[0]` raises IndexError. This is the state the site launches in.
+    if not all_posters:
+        st.info("No posters uploaded yet.")
+        st.stop()
 
     # --- Filters (all client-side on cached data) ---
     month_fmt = lambda d: d.strftime("%b %Y")
@@ -213,11 +221,10 @@ def show_poster(poster):
 # Data: poster cache, filter options, date range
 # ---------------------------------------------------------------------------
 
-S = get_session()
-
-all_posters = get_all_posters(S)
+all_posters = get_all_posters()
 all_bands, all_venues, all_credits, date_min, date_max = get_poster_vars(all_posters)
-months = month_range(date_min, date_max)
+# date_min is None on an empty archive; poster_grid stops before it would use `months`.
+months = month_range(date_min, date_max) if date_min else []
 
 # ---------------------------------------------------------------------------
 # Page heading + grid

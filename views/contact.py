@@ -1,7 +1,7 @@
 import json
 import streamlit as st
 from core.config import NAV_BTN_WIDTH
-from core.db import get_session, get_all_posters, save_request
+from core.db import get_all_posters, save_request
 from core.utils import get_poster_vars, normalise, poster_has, md_escape
 
 # ---------------------------------------------------------------------------
@@ -19,8 +19,7 @@ st.divider()
 # Data: session, poster cache, filter options
 # ---------------------------------------------------------------------------
 
-S = get_session()
-all_posters = get_all_posters(S)
+all_posters = get_all_posters()
 all_bands, all_venues, all_credits, _, _ = get_poster_vars(all_posters)
 
 # ---------------------------------------------------------------------------

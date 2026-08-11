@@ -1,33 +1,34 @@
-#| export
+import base64
 import json
+import os
 from io import BytesIO
-from snowflake.snowpark.functions import ai_complete, to_file, lit, col
-from core.config import STAGE, MODEL
-from snowflake.snowpark import Session
+
+import anthropic
+
+from core.config import IMG_FORMAT, MAX_OUTPUT_TOKENS, MODEL
 
 
 class ExtractionUnavailable(Exception):
-    """The AI scan couldn't run. Carries a message that is safe to show a visitor verbatim —
-    never the raw Snowflake error, which can name internal objects."""
+    """The AI scan couldn't run. Carries a message that is safe to show a visitor
+    verbatim — never the raw API error, which can name internal detail."""
 
 
-# Shown when we've hit the monthly AI spend cap. The per-user quota resets on the UTC calendar
-# month, so "the 1st" is right to within a few hours in Melbourne.
-QUOTA_MESSAGE = "Poster scanning is paused this month. It resets on the 1st — please try again then."
+# Shown when we've hit a spend cap or rate limit.
+QUOTA_MESSAGE = "Poster scanning is paused right now — please try again a bit later."
 GENERIC_MESSAGE = "Poster scanning is unavailable right now — please try again in a few minutes."
 
-# Snowflake doesn't publish a stable error code for a per-user AI quota block; the docs promise
-# only "a domain-appropriate error that identifies the cause (quota exhausted)". So match on
-# wording, not a code, and treat anything unrecognised as a generic outage — either way the
-# visitor gets a sentence instead of a stack trace. A resource-monitor warehouse suspension also
-# says "quota", which lands on the same message and is the behaviour we want: both mean the
-# monthly cap stopped us.
-_CAP_MARKERS = ("quota", "budget", "exceeded")
 
+def _client() -> anthropic.Anthropic:
+    """Build the client on first use rather than at import.
 
-def _user_message(exc: Exception) -> str:
-    text = str(exc).lower()
-    return QUOTA_MESSAGE if any(m in text for m in _CAP_MARKERS) else GENERIC_MESSAGE
+    A missing API key should break uploads, not the whole site. Browsing an archive of
+    posters does not need the model, so a misconfigured key degrades one page instead of
+    taking the gallery down with it — the opposite trade-off to the database URL, which
+    core/config.py requires at startup because nothing works without it.
+    """
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        raise ExtractionUnavailable(GENERIC_MESSAGE)
+    return anthropic.Anthropic()
 
 
 PROMPT_BASE = """Look at this image and do two things:
@@ -48,58 +49,103 @@ If it is not a valid poster, return empty values for the remaining fields."""
 
 
 def _build_prompt(venue_list: list[str]) -> str:
+    """Interpolate the known venue list into the prompt.
+
+    Venues get two chances at recognition: named here so the model can match against them
+    directly, and fuzzy-matched afterwards in core/utils.py. Bands only get the second
+    pass — listing ~200 band names on every call would be costly and would invite the
+    model to force a lineup onto names it recognises.
+
+    NOTE: this list is unbounded. It now comes from the `venues` table rather than only
+    venues attached to a poster, so it grows with the archive. At a dozen venues it is
+    ~50 tokens and irrelevant, and it stays fine into the hundreds — but if this ever
+    reaches thousands, cap or cluster it rather than sending the lot.
+    """
     return PROMPT_BASE.format(venues=", ".join(venue_list) if venue_list else "")
 
 
-RESPONSE_FORMAT = {
-    "type": "json",
-    "schema": {
-        "type": "object",
-        "properties": {
-            "is_valid":   {"type": "boolean"},
-            "headliners": {"type": "array", "items": {"type": "string"}},
-            "supports":   {"type": "array", "items": {"type": "string"}},
-            "date":       {"type": "string"},
-            "venues":     {"type": "array", "items": {"type": "string"}},
-            "event_name": {"type": ["string", "null"]}
-        },
-        "required": ["is_valid", "headliners", "supports", "date", "venues", "event_name"]
-    }
+# Structured outputs constrain the response to this shape, so the result is guaranteed
+# parseable. Two differences from the Cortex version this replaces: every object needs
+# additionalProperties: false, and a nullable field must use anyOf — the type-union form
+# {"type": ["string", "null"]} is not in the supported JSON Schema subset.
+RESPONSE_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "is_valid":   {"type": "boolean"},
+        "headliners": {"type": "array", "items": {"type": "string"}},
+        "supports":   {"type": "array", "items": {"type": "string"}},
+        "date":       {"type": "string"},
+        "venues":     {"type": "array", "items": {"type": "string"}},
+        "event_name": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+    },
+    "required": ["is_valid", "headliners", "supports", "date", "venues", "event_name"],
+    "additionalProperties": False,
 }
 
 
-def run_extraction(S: Session, stage_filename: str, venue_list: list[str] | None = None) -> dict:
-    """Call AI_COMPLETE on a staged poster image, log raw result to EXTRACTIONS_RAW atomically,
-    and return parsed dict. The write-then-read pattern is intentional — ai_complete()
-    executes server-side, so the result is captured by writing to table first, then
-    reading back by file_name (UUID, guaranteed unique)."""
-    prompt = _build_prompt(venue_list or [])
-    # Only the AI_COMPLETE call is wrapped. This is where the monthly spend cap, an unavailable
-    # model, and warehouse trouble all surface, and those are worth turning into a calm message.
-    # The read-back and json.loads below are deliberately left bare: if those break it's a bug in
-    # this app, and burying it under "try again in a few minutes" would hide it.
-    try:
-        S.range(1).select(
-            lit(stage_filename).alias("FILE_NAME"),
-            ai_complete(MODEL, prompt, to_file(f"@{STAGE}/{stage_filename}"),
-                        response_format=RESPONSE_FORMAT).alias("AI_COMPLETE")
-        ).write.mode("append").save_as_table("EXTRACTIONS_RAW")
-    except Exception as e:
-        raise ExtractionUnavailable(_user_message(e)) from e
+def run_extraction(image: BytesIO, venue_list: list[str] | None = None) -> dict:
+    """Extract poster metadata from image bytes. Returns the parsed result.
 
-    row = S.table("EXTRACTIONS_RAW").filter(col("FILE_NAME") == stage_filename).first()
-    return json.loads(row["AI_COMPLETE"])
+    Takes bytes directly, so extraction happens BEFORE the image is stored — a rejected
+    or non-poster upload never reaches R2. Cortex forced the opposite order because
+    AI_COMPLETE read from a stage, which is also why the old version had to write the
+    result to a table and read it back: the call executed server-side inside a SELECT.
+    Here the response simply comes back.
+
+    No thinking configuration: Haiku 4.5 does not accept the `effort` parameter, and this
+    is a bounded extraction task that does not want extended reasoning.
+    """
+    prompt = _build_prompt(venue_list or [])
+    b64 = base64.standard_b64encode(image.getvalue()).decode()
+
+    # Only the API call is wrapped. A failure here is ours, not the visitor's, and is
+    # worth turning into a calm sentence. The json.loads below is deliberately left bare:
+    # structured outputs guarantee valid JSON, so a failure there is a bug in this app and
+    # burying it under "try again later" would hide it.
+    try:
+        response = _client().messages.create(
+            model=MODEL,
+            max_tokens=MAX_OUTPUT_TOKENS,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": f"image/{IMG_FORMAT.lower()}",
+                            "data": b64,
+                        },
+                    },
+                    {"type": "text", "text": prompt},
+                ],
+            }],
+            output_config={"format": {"type": "json_schema", "schema": RESPONSE_SCHEMA}},
+        )
+    except anthropic.RateLimitError as e:
+        raise ExtractionUnavailable(QUOTA_MESSAGE) from e
+    except anthropic.APIStatusError as e:
+        # Typed exceptions, not string matching. The Snowflake version had to grep the
+        # error text for "quota"/"budget"/"exceeded" because Cortex published no stable
+        # code for a spend cap; the SDK exposes real classes and an error type, so the
+        # visitor-facing message is now reliable rather than best-effort.
+        billing = (e.type or "") in {"billing_error", "permission_error"}
+        raise ExtractionUnavailable(QUOTA_MESSAGE if billing else GENERIC_MESSAGE) from e
+    except anthropic.APIConnectionError as e:
+        raise ExtractionUnavailable(GENERIC_MESSAGE) from e
+
+    text = next(block.text for block in response.content if block.type == "text")
+    return json.loads(text)
 
 
 def is_valid_poster(result: dict) -> bool:
-    """Returns True if the AI determined the image is a valid gig/event poster.
-    Checks the is_valid field from the AI extraction result."""
+    """Returns True if the AI determined the image is a valid gig/event poster."""
     return bool(result.get("is_valid", False))
 
 
 def parse_extraction(result: dict) -> tuple[list[str], list[str], str, list[str], str | None]:
-    """Unwrap raw AI result into (headliners, supports, date, venues, event_name) with safe defaults.
-    Returns empty list/string for missing fields, None for absent event_name.
+    """Unwrap raw AI result into (headliners, supports, date, venues, event_name) with safe
+    defaults. Returns empty list/string for missing fields, None for absent event_name.
     If headliners is empty but supports has values, promotes all supports to headliners.
     venues is a list — most posters name one, but a day party can span several."""
     headliners = result.get("headliners", [])
@@ -111,5 +157,5 @@ def parse_extraction(result: dict) -> tuple[list[str], list[str], str, list[str]
         supports,
         result.get("date", ""),
         result.get("venues", []),
-        result.get("event_name")
+        result.get("event_name"),
     )

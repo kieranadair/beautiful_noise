@@ -1,10 +1,17 @@
 # Floor set by the APIs this app uses: st.navigation(position="hidden") (1.56), st.bottom (1.57)
 # and st.dialog(icon=...) (1.53). 1.61 also requires Python >= 3.10.
 streamlit>=1.61.1
-snowflake-snowpark-python
+# Postgres (Neon). [binary] ships wheels so there's no libpq build step on Railway;
+# [pool] is the connection pool, which also replaces the old reconnect-and-retry decorator.
+psycopg[binary,pool]
+# Cloudflare R2 over its S3-compatible API.
+boto3
+# Poster metadata extraction.
+anthropic
+# Local development reads .env; on Railway the same names are real environment variables.
+python-dotenv
 rapidfuzz
 # Native parsers that decode untrusted uploads — pinned to advisory-clean floors
 # (verified current as of 2026-07). Bump these when new security releases ship.
 Pillow>=12.3.0
 PyMuPDF>=1.28.0
-cryptography

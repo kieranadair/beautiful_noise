@@ -163,12 +163,23 @@ def get_filtered_posters(all_posters: list[dict], band_filter: list[str] | None 
         posters = [p for p in posters if p["UPLOAD_TYPE"] != "COMMUNITY"]
     return posters
 
-def get_poster_vars(all_posters: list[dict]) -> tuple[list[str], list[str], list[str], date, date]:
+def get_poster_vars(all_posters: list[dict]) -> tuple[list[str], list[str], list[str], date | None, date | None]:
     """Extract sorted unique bands, venues, credits, and date range from cached poster data.
-    Used to populate filter options and form dropdowns."""
+    Used to populate GALLERY FILTER OPTIONS — deliberately derived from the posters themselves,
+    so a filter is only ever offered for something that would actually match. The upload page
+    wants the opposite (every known name, attached to a poster or not) and uses
+    core.db.get_vocabulary() instead.
+
+    Returns (None, None) for the date range on an empty archive. It previously raised
+    `ValueError: min() arg is an empty sequence` there, and because this is called by the gallery,
+    upload AND contact pages, an empty archive took the entire site down — including the upload
+    page, so there was no way to add the first poster and escape. Callers must treat a None date
+    range as "no posters yet" rather than passing it to month_range()."""
     all_bands = sorted(set(band for o in all_posters for band in o["BANDS"]))
     all_venues = sorted(set(venue for o in all_posters for venue in o["VENUES"]))
     all_credits = sorted(set(c for o in all_posters for c in o["CREDITS"]))
+    if not all_posters:
+        return all_bands, all_venues, all_credits, None, None
     date_min = min(o["DATE"] for o in all_posters)
     date_max = max(o["DATE"] for o in all_posters)
     return all_bands, all_venues, all_credits, date_min, date_max
