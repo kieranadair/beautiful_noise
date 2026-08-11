@@ -192,9 +192,16 @@ def show_poster(poster):
     with right:
         headliners = poster["HEADLINERS"] if poster["HEADLINERS"] else poster["BANDS"]
         supports = poster["SUPPORTS"] if poster["HEADLINERS"] else []
-        st.header(", ".join(md_escape(h) for h in headliners))
+        # A named event is the poster's identity when it has one — "GOLDEN PLAINS" tells a
+        # reader more than its billing does, and it's what they'd have called the night.
+        # So the event name takes the top slot and the lineup shifts down one. Unnamed
+        # gigs, which are most of them, are unchanged: headliners lead, supports follow.
+        if poster["EVENT_NAME"]:
+            st.header(md_escape(poster["EVENT_NAME"]))
+            st.subheader(", ".join(md_escape(h) for h in headliners))
+        else:
+            st.header(", ".join(md_escape(h) for h in headliners))
         if supports: st.subheader(", ".join(md_escape(s) for s in supports))
-        if poster["EVENT_NAME"]: st.subheader(md_escape(poster["EVENT_NAME"]))
         st.write(f"**Poster By:** {', '.join(md_escape(c) for c in poster['CREDITS']) if poster['CREDITS'] else '*UNKNOWN*'}")
         st.write(f"**Date:** {poster['DATE'].strftime('%d %B %Y').upper()}")
         venue_label = "Venues" if len(poster["VENUES"]) > 1 else "Venue"
@@ -230,9 +237,14 @@ months = month_range(date_min, date_max) if date_min else []
 # Page heading + grid
 # ---------------------------------------------------------------------------
 
+def count(n: int, noun: str) -> str:
+    """'1 poster' / '2 posters'. Only ever wrong at exactly one, which is easy to never
+    see in testing and is precisely the state a fresh archive launches in."""
+    return f"{n} {noun}{'' if n == 1 else 's'}"
+
 primary = st.get_option("theme.primaryColor")
 secondary = st.get_option("theme.secondaryBackgroundColor")
-st.subheader(f'Browse :color[{len(all_posters)} posters]{{background={primary} foreground={secondary}}} for {len(all_bands)} bands by {len(all_credits)} creators at {len(all_venues)} venues')
+st.subheader(f'Browse :color[{count(len(all_posters), "poster")}]{{background={primary} foreground={secondary}}} for {count(len(all_bands), "band")} by {count(len(all_credits), "creator")} at {count(len(all_venues), "venue")}')
 
 # Open the detail dialog whenever ?poster=<id> is set — whether a click put it there or someone
 # followed a shared link. Runs outside the fragment so it survives fragment-scoped reruns.

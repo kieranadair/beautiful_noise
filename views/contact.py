@@ -89,9 +89,15 @@ if primary_poster:
             st.write(f"**{'Venues' if len(primary_poster['VENUES']) > 1 else 'Venue'}:** {', '.join(md_escape(v) for v in primary_poster['VENUES'])}")
             st.write(f"**Date:** {primary_poster['DATE']:%d %B %Y}")
             st.write(f"**Poster By:** {', '.join(md_escape(x) for x in primary_poster['CREDITS']) if primary_poster['CREDITS'] else 'Unknown'}")
-            if primary_poster["UPLOAD_TYPE"] == "COMMUNITY":
-                st.warning("Community upload")
-            st.caption(f"ID: {primary_poster['POSTER_ID']}")
+            # Type and ID are ordinary rows like every other field. They were a yellow
+            # st.warning and a small st.caption, borrowed from the gallery modal where a
+            # badge earns its emphasis — here it read as a problem with the poster rather
+            # than a description of it, and the caption made the ID look like a footnote
+            # when it's the thing a request is filed against. Type now shows for both
+            # upload kinds: a field that appears only sometimes is the inconsistency.
+            upload_label = "Community Upload" if primary_poster["UPLOAD_TYPE"] == "COMMUNITY" else "Shared with creator's permission"
+            st.write(f"**Type:** {upload_label}")
+            st.write(f"**ID:** {primary_poster['POSTER_ID']}")
 
     # -------------------------------------------------------------------
     # Step 2: Select an action
