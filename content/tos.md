@@ -48,7 +48,7 @@ Content in the Beautiful Noise archive is made available under the **Creative Co
 
 ### 5. Copyright Complaints and Takedowns
 
-If you are a copyright holder and believe content on Beautiful Noise infringes your rights, use the [Contact](/contact_page) page. Find the poster, choose **Request a poster takedown**, and confirm that you are the rights holder — you can include multiple posters in a single request.
+If you are a copyright holder and believe content on Beautiful Noise infringes your rights, use the [Poster Requests](/poster_requests) page. Find the poster, choose **Request a poster takedown**, and confirm that you are the rights holder — you can include multiple posters in a single request.
 
 In the notes field, please include:
 - A description of the copyrighted work

@@ -16,13 +16,13 @@ st.html(
 # Set up navigation. position="hidden" drops the nav widget outright — nothing else in the app
 # writes to the sidebar, so no sidebar renders at all and each page supplies its own nav buttons.
 # url_path pins each slug to what it was before the files moved into views/. Without it the slug
-# is inferred from the filename, so renaming would silently break every /contact_page and
+# is inferred from the filename, so renaming would silently break every /poster_requests and
 # /terms_of_service link in the copy — and any URL a visitor has already shared.
 gallery = st.Page("views/gallery.py", title="Gallery")
 upload  = st.Page("views/upload.py",  title="Upload", url_path="upload_page")
-contact = st.Page("views/contact.py", title="Contact", url_path="contact_page")
+requests_page = st.Page("views/poster_requests.py", title="Poster Requests", url_path="poster_requests")
 terms_of_service = st.Page("views/terms.py", title="Terms of Service", url_path="terms_of_service")
-pg = st.navigation([gallery, upload, contact, terms_of_service], position="hidden")
+pg = st.navigation([gallery, upload, requests_page, terms_of_service], position="hidden")
 
 # Logo
 primary = st.get_option("theme.primaryColor")
@@ -74,7 +74,7 @@ st.space("small")
 with st.container(horizontal=True, vertical_alignment="center", gap="small"):
     if st.button("Learn more about Beautiful Noise", icon=":material/help:", type="tertiary"):
         show_faq()
-    st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/contact_page).")
+    st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/poster_requests).")
 
 # Maker credit, on its own line at the very bottom — the usual spot for one. Deliberately "Made
 # by" rather than a © line: the caption above already assigns copyright to uploaders, and a second

@@ -12,7 +12,7 @@ At its core, Beautiful Noise is about celebrating the people who *make* gig post
 
 ### The scanner got something wrong. What do I do?
 
-Before you save, just edit it — every field on the review form is yours to change, and you can add or remove bands, swap the venue, or fix the date on the spot. If you spot a mistake on a poster that's *already* in the archive, use the [Contact](/contact_page) page to submit a correction.
+Before you save, just edit it — every field on the review form is yours to change, and you can add or remove bands, swap the venue, or fix the date on the spot. If you spot a mistake on a poster that's *already* in the archive, use the [Poster Requests](/poster_requests) page to submit a correction.
 
 ### Is AI used in this project? How?
 
@@ -32,7 +32,7 @@ Music is about fandom. This archive was built by one. We prefer posters to be up
 
 ### I made a poster that someone else uploaded — can I claim or remove it?
 
-Yes, always. Head to [Contact](/contact_page), find your poster, and either **authorise** it (to have it shown as **Shared with creator's permission**) or **request its removal**.
+Yes, always. Head to [Poster Requests](/poster_requests), find your poster, and either **authorise** it (to have it shown as **Shared with creator's permission**) or **request its removal**.
 
 ### Who owns the posters? Can I reuse them?
 
@@ -40,7 +40,7 @@ Rights holders keep their copyright — uploading to Beautiful Noise doesn't sig
 
 ### How do I get something corrected or taken down?
 
-Everything runs through the [Contact](/contact_page) page. You can:
+Everything runs through the [Poster Requests](/poster_requests) page. You can:
 - Correct a band, venue, poster credit, or event name
 - Fix a poster's date
 - Adjust a lineup (add/remove bands, change headliner vs support)

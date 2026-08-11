@@ -44,7 +44,7 @@ COMMUNITY_UPLOAD_EXPLAINER = (
 # A single source of truth drives the detail dialog: the `poster` query param. Clicking a poster
 # sets it; arriving on a shared link already has it. Both paths then run the same code, so the
 # dialog can't get out of step with the URL. `poster` already means "this poster" app-wide —
-# show_poster() passes it to the contact page, which reads it to preselect (views/contact.py).
+# show_poster() passes it to the requests page, which reads it to preselect (views/poster_requests.py).
 
 def clear_poster_param() -> None:
     """Drop ?poster= so closing the dialog resets the URL, ready for the next poster."""
@@ -222,7 +222,7 @@ def show_poster(poster):
         with st.popover("Share poster", icon=":material/link:", type="tertiary"):
             st.code(f"{st.context.url}?poster={poster['POSTER_ID']}", language=None, wrap_lines=True)
         contact_label = "Authorise, submit a correction or request removal" if poster["UPLOAD_TYPE"] == "COMMUNITY" else "Submit a correction or request removal"
-        st.page_link("views/contact.py", label=contact_label, icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
+        st.page_link("views/poster_requests.py", label=contact_label, icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
 
 # ---------------------------------------------------------------------------
 # Data: poster cache, filter options, date range

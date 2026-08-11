@@ -63,9 +63,6 @@ def poster_picker(labels, key="default", help_text="Search by poster id, band, v
 st.subheader("Submit a request")
 st.write("Use this form to submit corrections, attribution requests, or takedown notices. There's no sign-in and we don't collect contact details — every request is reviewed by hand before any change is made, and approved changes appear in the gallery automatically.")
 
-if "request_submitted" in st.session_state:
-    st.success(st.session_state.pop("request_submitted"))
-
 poster_param = st.query_params.get("poster")
 default_index = None
 if poster_param:
@@ -363,3 +360,16 @@ if primary_poster:
                     st.session_state["request_submitted"] = f"Lineup edit request submitted. {REVIEW_NOTICE}"
                     st.query_params.clear()
                     st.rerun()
+# ---------------------------------------------------------------------------
+# Submission confirmation
+# ---------------------------------------------------------------------------
+# Rendered last, so it lands below the form the reader just submitted rather than at the
+# top of the page. Every submit handler above sets this key and calls st.rerun(), which
+# resets the form — and on the fresh run the message has to be drawn *somewhere*. It used
+# to be near the page heading, which meant the confirmation for an action taken at the
+# bottom of a long form appeared off-screen above it, reading as though nothing happened.
+#
+# pop() rather than read: it shows once, then clears, so it doesn't reappear on the next
+# unrelated rerun.
+if "request_submitted" in st.session_state:
+    st.success(st.session_state.pop("request_submitted"), icon=":material/check_circle:")
