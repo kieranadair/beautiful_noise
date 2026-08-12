@@ -231,7 +231,7 @@ def show_poster(poster):
         st.space(size="medium")
         with st.popover("Share poster", icon=":material/link:", type="tertiary"):
             st.code(f"{st.context.url}?poster={poster['POSTER_ID']}", language=None, wrap_lines=True)
-        contact_label = "Authorise, submit a correction or request removal" if poster["UPLOAD_TYPE"] == "COMMUNITY" else "Submit a correction or request removal"
+        contact_label = "Submit correction or other request" if poster["UPLOAD_TYPE"] == "COMMUNITY" else "Submit a correction or request removal"
         st.page_link("views/poster_requests.py", label=contact_label, icon=":material/edit:", query_params={"poster": poster["POSTER_ID"]})
 
 # ---------------------------------------------------------------------------
