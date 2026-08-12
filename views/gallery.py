@@ -4,11 +4,21 @@ from core.db import get_all_posters
 from core.utils import get_filtered_posters, get_poster_vars, month_range, md_escape
 
 # ---------------------------------------------------------------------------
-# Navigation
+# Hero Section
 # ---------------------------------------------------------------------------
 
-if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
-    st.switch_page("views/upload.py")
+primary = st.get_option("theme.primaryColor")
+secondary = st.get_option("theme.linkColor")
+
+st.subheader(f":color[NARRM GIG POSTER ARCHIVE]{{foreground={secondary}}}")
+
+st.write("""**Beautiful Noise** is a community-driven archive that exists to document and celebrate the poster art of the Narrm music scene.
+
+Each week, new gig posters decorate this city's streets - as bold, creative and important as the music they champion.
+
+But too often, they're lost to time once the show they've promoted is over - torn down, pasted over, or lost to the algorithm.
+
+This project seeks to stop that by creating a permanent, independent space to share and preserve this culture of creative art.""")
 
 st.divider()
 

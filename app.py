@@ -1,6 +1,6 @@
 import logging
 import streamlit as st
-from core.config import BLANK_ICON, CONTENT_DIR
+from core.config import BLANK_ICON, CONTENT_DIR, NAV_BTN_WIDTH
 
 
 st.set_page_config(layout="wide", page_title="Beautiful Noise", page_icon=BLANK_ICON)
@@ -27,20 +27,15 @@ pg = st.navigation([gallery, upload, requests_page, terms_of_service], position=
 # Logo
 primary = st.get_option("theme.primaryColor")
 secondary = st.get_option("theme.linkColor")
-st.write(f':color[BEAUTIFUL]{{foreground={primary}}}NOISE :color[| GIG POSTER ARCHIVE]{{foreground={secondary}}}')
+
+primary = st.get_option("theme.primaryColor")
+secondary = st.get_option("theme.linkColor")
+
+if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
+    st.switch_page("views/upload.py")
 
 # Header content
-st.title(f"I took a walk down :color[memory lane...]{{foreground={primary}}}")
-text = """
-**Beautiful Noise** is a living, community-driven archive of posters from Narrm's live music scene — its aim is to capture and preserve the vibrancy, creativity, and magic behind this art.
-
-Every week, new gig posters decorate this city's streets — bold, strange, and beautiful — born from the same underground talent that fills its stages. They are the visual pulse of our scene, and reflect the talent and diversity of the bands they promote.
-
-But posters are ephemeral by nature. Torn down, pasted over, lost to time once the show's over. Without care, this rich visual history will disappear — and with it, the memory of the culture it represents.
-
-This project exists to change that. To pull these works off the street (and away from the mercy of the algorithm) and into an independent archive that endures. A place where this art can be preserved, celebrated, and given the recognition it deserves — not just for now, but for everyone who comes after.
-"""
-st.write(text)
+st.title(f":color[BEAUTIFUL]{{foreground={primary}}} NOISE")
 
 # Run pages.
 #
@@ -80,15 +75,3 @@ with st.container(horizontal=True, vertical_alignment="center", gap="small"):
 # by" rather than a © line: the caption above already assigns copyright to uploaders, and a second
 # © against a different name would muddy that.
 st.caption("Made by Kieran Adair")
-
-# --- TEMPORARY: soft-launch notice -----------------------------------------------------------
-# Pinned to the viewport with st.bottom so it stays visible while browsing — this is the one
-# thing in the app that genuinely benefits from following the reader. Remove this whole block
-# (and nothing else) whenever the launch period is judged over — deliberately no target date,
-# that call is the maintainer's to make.
-with st.bottom:
-    st.info(
-        "**Just launched**. Spotted a bug, or got a suggestion? "
-        "[Message us on Instagram](https://www.instagram.com/beautifulnoise.melbourne).",
-        icon=":material/rocket_launch:",
-    )

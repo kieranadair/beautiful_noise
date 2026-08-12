@@ -11,7 +11,7 @@ from core.utils import preprocess_image, pdf_to_image_bytes, ImageRejected, prep
 # Navigation
 # ---------------------------------------------------------------------------
 
-if st.button("VIEW GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
+if st.button("BACK TO GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
     st.switch_page("views/gallery.py")
 
 st.divider()
@@ -69,15 +69,102 @@ with left:
     # with the practical tip in help= so it's there for anyone who wants it without adding a
     # second line of page copy.
     img = st.file_uploader(
-        ":material/document_scanner: Scans and original files make the best archive copies.",
+        " ",
         type=["jpg", "jpeg", "png", "webp", "pdf"],
         key=f"uploader_{upload_key}",
         help="Photos of posters out in the wild are welcome too — just try to get them flat and square-on.",
+        label_visibility="collapsed",
         disabled="result" in ss,
     )
 
+    st.caption(":material/document_scanner: Scans and original files make the best archive copies. If sending photos, try and get them flat and square-on.")
+
     if "upload_error" in ss:
         st.error(ss.pop("upload_error"))
+
+    # --- Stage 1 & 2: process image + AI extraction (runs once per upload) ---
+    if img and "result" not in ss:
+        with st.status("Hold tight while we analyse this poster...", expanded=True) as status:
+
+            # Preprocess: PDF conversion, resize, compress. Bad/malicious/oversized files
+            # raise ImageRejected — surface its safe message via the existing upload_error
+            # path (no stack trace) and reset.
+            suffix = Path(img.name).suffix.lower()
+            try:
+                if suffix == ".pdf":
+                    img = pdf_to_image_bytes(img)
+                ss["processed_img"] = preprocess_image(img)
+            except ImageRejected as e:
+                ss["upload_error"] = str(e)
+                reset_upload()
+                st.rerun()
+
+            # MD5 duplicate check (before uploading to stage)
+            md5_hash = hashlib.md5(ss["processed_img"].getvalue(), usedforsecurity=False).hexdigest()
+            if check_duplicate_md5(md5_hash, all_posters):
+                ss["upload_error"] = "This poster has already been uploaded."
+                reset_upload()
+                st.rerun()
+
+            # The scan's identity, generated before the call so the extraction row, the
+            # eventual R2 key and the poster all agree on one id.
+            scan_id = str(uuid.uuid4())
+
+            st.write("Scanning the band names...")
+            try:
+                result = run_extraction(ss["processed_img"], venue_list=all_venues)
+            except ExtractionUnavailable as e:
+                ss["upload_error"] = str(e)
+                reset_upload()
+                st.rerun()
+            # Fuzzy match, then log the scan exactly once — valid or not. A rejected scan
+            # is as much a data point as a successful one; it just carries no `matched`.
+            valid = is_valid_poster(result)
+            matched = None
+            if valid:
+                st.write("Populating upload form...")
+                headliners_raw, supports_raw, date_str, venues_raw, event_name = parse_extraction(result)
+                matched_headliners, matched_supports, inferred_date, matched_venues, normed_event_name = prepare_review_defaults(headliners_raw, supports_raw, date_str, venues_raw, event_name, all_bands, all_venues)
+                matched = {
+                    "headliners": matched_headliners,
+                    "supports": matched_supports,
+                    "venues": matched_venues,
+                    "event_name": normed_event_name,
+                    # isoformat because the column is jsonb and date isn't JSON-native.
+                    "inferred_date": inferred_date.isoformat(),
+                }
+            log_extraction(scan_id, MODEL, valid, result, matched)
+
+            if not valid:
+                ss["upload_error"] = "That doesn't look like a gig poster — please try again."
+                bump_upload_key()
+                st.rerun()
+
+            ss["result"] = {
+                "scan_id": scan_id,
+                "md5_hash": md5_hash,
+                "matched_headliners": matched_headliners,
+                "matched_supports": matched_supports,
+                "inferred_date": inferred_date,
+                "matched_venues": matched_venues,
+                "normed_event_name": normed_event_name,
+            }
+
+            status.update(label="Analysis complete!", state="complete", expanded=False)
+            st.rerun()
+
+    # --- Image preview (persists after rejection so user sees what was rejected) ---
+    if "processed_img" in ss:
+        st.image(ss["processed_img"])
+        if "result" not in ss:
+            ss.pop("processed_img", None)
+
+
+# ---------------------------------------------------------------------------
+# RIGHT COLUMN: image processing pipeline + preview
+# ---------------------------------------------------------------------------
+
+with right:
 
     # --- Review form (pre-filled by AI extraction, editable by user) ---
     has_result = "result" in ss
@@ -164,97 +251,3 @@ with left:
             ss.pop("processed_img", None)
             reset_upload()
             st.switch_page("views/gallery.py")
-
-# ---------------------------------------------------------------------------
-# RIGHT COLUMN: image processing pipeline + preview
-# ---------------------------------------------------------------------------
-
-with right:
-
-    # --- Stage 1 & 2: process image + AI extraction (runs once per upload) ---
-    if img and "result" not in ss:
-        with st.status("Hold tight while we analyse this poster...", expanded=True) as status:
-
-            # Preprocess: PDF conversion, resize, compress. Bad/malicious/oversized files
-            # raise ImageRejected — surface its safe message via the existing upload_error
-            # path (no stack trace) and reset.
-            st.write("Uploading image...")
-            suffix = Path(img.name).suffix.lower()
-            try:
-                if suffix == ".pdf":
-                    img = pdf_to_image_bytes(img)
-                ss["processed_img"] = preprocess_image(img)
-            except ImageRejected as e:
-                ss["upload_error"] = str(e)
-                reset_upload()
-                st.rerun()
-
-            # MD5 duplicate check (before uploading to stage)
-            md5_hash = hashlib.md5(ss["processed_img"].getvalue(), usedforsecurity=False).hexdigest()
-            if check_duplicate_md5(md5_hash, all_posters):
-                ss["upload_error"] = "This poster has already been uploaded."
-                reset_upload()
-                st.rerun()
-
-            # The scan's identity, generated before the call so the extraction row, the
-            # eventual R2 key and the poster all agree on one id.
-            scan_id = str(uuid.uuid4())
-
-            st.write("Scanning the band names...")
-            # Scan BEFORE storing. The API takes bytes, so nothing has to be uploaded first —
-            # which means a non-poster or a failed scan never leaves an object in R2. Cortex
-            # forced the opposite order because AI_COMPLETE read from a stage.
-            #
-            # The scan can be capped (spend limit) or briefly unavailable. Both are our
-            # problem, not the visitor's, so they get a plain sentence via the same
-            # upload_error path as a rejected image rather than a stack trace.
-            try:
-                result = run_extraction(ss["processed_img"], venue_list=all_venues)
-            except ExtractionUnavailable as e:
-                ss["upload_error"] = str(e)
-                reset_upload()
-                st.rerun()
-            # Fuzzy match, then log the scan exactly once — valid or not. A rejected scan
-            # is as much a data point as a successful one; it just carries no `matched`.
-            valid = is_valid_poster(result)
-            matched = None
-            if valid:
-                st.write("Populating upload form...")
-                headliners_raw, supports_raw, date_str, venues_raw, event_name = parse_extraction(result)
-                matched_headliners, matched_supports, inferred_date, matched_venues, normed_event_name = prepare_review_defaults(headliners_raw, supports_raw, date_str, venues_raw, event_name, all_bands, all_venues)
-                matched = {
-                    "headliners": matched_headliners,
-                    "supports": matched_supports,
-                    "venues": matched_venues,
-                    "event_name": normed_event_name,
-                    # isoformat because the column is jsonb and date isn't JSON-native.
-                    "inferred_date": inferred_date.isoformat(),
-                }
-            log_extraction(scan_id, MODEL, valid, result, matched)
-
-            if not valid:
-                ss["upload_error"] = "That doesn't look like a gig poster — please try again."
-                bump_upload_key()
-                st.rerun()
-
-            # Note what is NOT here: nothing has been written to R2. Storage happens at
-            # save time, so an abandoned review leaves no orphaned object — only an
-            # extraction row, which is exactly the trace worth keeping.
-            ss["result"] = {
-                "scan_id": scan_id,
-                "md5_hash": md5_hash,
-                "matched_headliners": matched_headliners,
-                "matched_supports": matched_supports,
-                "inferred_date": inferred_date,
-                "matched_venues": matched_venues,
-                "normed_event_name": normed_event_name,
-            }
-
-            status.update(label="Analysis complete!", state="complete", expanded=False)
-            st.rerun()
-
-    # --- Image preview (persists after rejection so user sees what was rejected) ---
-    if "processed_img" in ss:
-        st.image(ss["processed_img"])
-        if "result" not in ss:
-            ss.pop("processed_img", None)

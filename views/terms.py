@@ -6,9 +6,7 @@ from core.config import NAV_BTN_WIDTH, CONTENT_DIR
 # Navigation (two buttons side by side)
 # ---------------------------------------------------------------------------
 
-if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
-    st.switch_page("views/upload.py")
-if st.button("VIEW GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
+if st.button("BACK TO GALLERY", icon=":material/chevron_backward:", width=NAV_BTN_WIDTH):
     st.switch_page("views/gallery.py")
 
 st.divider()
