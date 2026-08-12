@@ -2,7 +2,7 @@
 
 A community-driven archive of gig posters from Narrm's live music scene. Its purpose is to document and preserve them for the future.
 
-More importantly, this archive is independent of the algorithm. Its owned by the community that builds it.
+More importantly, this archive is independent of the algorithm. It's owned by the community that builds it.
 
 ### How do I upload a poster?
 

@@ -24,17 +24,13 @@ requests_page = st.Page("views/poster_requests.py", title="Poster Requests", url
 terms_of_service = st.Page("views/terms.py", title="Terms of Service", url_path="terms_of_service")
 pg = st.navigation([gallery, upload, requests_page, terms_of_service], position="hidden")
 
-# Logo
+# Global header — CTA and wordmark, rendered above whichever page runs below. The pages read
+# theme.linkColor for themselves where they need it; only the wordmark needs primaryColor here.
 primary = st.get_option("theme.primaryColor")
-secondary = st.get_option("theme.linkColor")
-
-primary = st.get_option("theme.primaryColor")
-secondary = st.get_option("theme.linkColor")
 
 if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NAV_BTN_WIDTH):
     st.switch_page("views/upload.py")
 
-# Header content
 st.title(f":color[BEAUTIFUL]{{foreground={primary}}} NOISE")
 
 # Run pages.
