@@ -1,9 +1,9 @@
 import logging
 import streamlit as st
-from core.config import BLANK_ICON, CONTENT_DIR, NAV_BTN_WIDTH
+from core.config import FAVICON, CONTENT_DIR, NAV_BTN_WIDTH
 
 
-st.set_page_config(layout="wide", page_title="Beautiful Noise", page_icon=BLANK_ICON)
+st.set_page_config(layout="wide", page_title="Beautiful Noise", page_icon=FAVICON)
 
 # Multiselect tags truncate their label by default, but the gallery filters and upload form carry
 # long band and venue names — let the tags size to their content instead.

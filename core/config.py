@@ -34,10 +34,15 @@ def _require(name: str) -> str:
 # User-facing copy (faq.md, tos.md).
 CONTENT_DIR = Path(__file__).resolve().parent.parent / "content"
 
-# A deliberately blank browser-tab icon. Streamlit offers no way to *omit* the favicon —
-# page_icon=None falls back to the Streamlit logo — so the only route to an empty tab is
-# to hand it an image containing nothing. This is a 32x32 fully transparent PNG.
-BLANK_ICON = str(Path(__file__).resolve().parent.parent / "static" / "blank_favicon.png")
+# Browser-tab icon: "BN" in white on the theme's #ff0033, 256x256 (browsers downscale).
+#
+# It has to be opaque, and that is the whole point of it. Streamlit's index.html hardcodes
+# <link rel="shortcut icon" href="./favicon.png"> — its own logo — and the browser paints
+# that before the websocket connects; page_icon only *replaces* it afterwards. The previous
+# icon here was a fully transparent PNG, which is indistinguishable from "no change" to a
+# browser, so the Streamlit logo simply stayed. There is no way to omit a favicon; the only
+# way to lose the Streamlit one is to paint over it.
+FAVICON = str(Path(__file__).resolve().parent.parent / "static" / "favicon.png")
 
 # --- Database -------------------------------------------------------------
 # The pooled (-pooler) Neon host, authenticating as bn_app: SELECT and INSERT only, no

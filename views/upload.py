@@ -243,11 +243,11 @@ with right:
     # --- Post-save success actions ---
     if ss.get("saved"):
         st.success("Poster saved! Thanks for contributing to the archive.")
-        if st.button("Upload another poster", type="primary", icon=":material/add:", width="stretch"):
+        if st.button("UPLOAD ANOTHER POSTER", type="primary", icon=":material/add:", width="stretch"):
             ss.pop("processed_img", None)
             reset_upload()
             st.rerun()
-        if st.button("View it in the gallery", width="stretch", icon=":material/chevron_backward:"):
+        if st.button("VIEW IN GALLERY", width="stretch", icon=":material/chevron_backward:"):
             ss.pop("processed_img", None)
             reset_upload()
             st.switch_page("views/gallery.py")
