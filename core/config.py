@@ -65,7 +65,30 @@ R2_PUBLIC_BASE = _require("R2_PUBLIC_BASE").rstrip("/")
 # --- AI extraction --------------------------------------------------------
 # Kept in code, not the environment, so a model change ships via a normal git push rather
 # than a manual variable edit. Must be image-capable.
-MODEL = "claude-haiku-4-5"
+#
+# Llama 4 Maverick, reached through OpenRouter. Benchmarked against Claude Haiku 4.5,
+# Qwen3-VL-32B and GPT-5-mini over 20 real posters on 2026-08-17: Maverick needed the
+# fewest corrections (9/20 posters clean against Haiku's 3), read dates perfectly, ran
+# fastest (~2s vs 2.7s), and costs roughly a fifth of Haiku. Haiku's failure mode was the
+# expensive one — fluent, confident, invented band names (MARTYRED DEATH for Mannequin
+# Death Squad, DRA2LOG for Dialog) that a reviewer has to notice and retype.
+MODEL = "meta-llama/llama-4-maverick"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+# OpenRouter serves one model ID from several upstream hosts at different quantisations,
+# and they are not equivalent: DigitalOcean was measured four times more *consistent* than
+# DeepInfra and consistently WORSE, misreading four posters DeepInfra reads correctly, at
+# five times the latency (11.5s vs 2.0s). So DeepInfra is preferred — but fallbacks stay
+# ENABLED here, unlike in the benchmark where they were pinned off for reproducibility.
+# In production a DeepInfra outage should degrade extraction quality, not stop uploads.
+# require_parameters keeps any host that would ignore the JSON schema out of the rotation:
+# without it a non-compliant host returns prose and run_extraction's json.loads explodes.
+OPENROUTER_PROVIDER = {
+    "order": ["DeepInfra"],
+    "allow_fallbacks": True,
+    "require_parameters": True,
+}
+
 # Room for the structured-output JSON and nothing more; this is an extraction task.
 MAX_OUTPUT_TOKENS = 1024
 

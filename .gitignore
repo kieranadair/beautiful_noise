@@ -19,3 +19,9 @@ Screenshot*.png
 
 # Assistant guidance — local only, like .context/
 CLAUDE.md
+
+# Local model-benchmark corpus: 20 real posters plus labels.csv, the human-reviewed
+# ground truth used to choose the extraction model on 2026-08-17. Kept locally because
+# re-labelling is the expensive half to reproduce — but these are other people's posters,
+# and this repo is public, so they must never be committed.
+test_posters/

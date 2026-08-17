@@ -30,8 +30,8 @@ fi
 # Deliberately a warning, not a failure. A missing key breaks poster scanning; it does not
 # break browsing an archive of posters, and taking the gallery down over it would be the
 # wrong trade. core/ai.py turns this into a calm message on the upload page.
-if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-  echo "WARNING: ANTHROPIC_API_KEY is unset — uploads will not be able to scan posters." >&2
+if [ -z "${OPENROUTER_API_KEY:-}" ]; then
+  echo "WARNING: OPENROUTER_API_KEY is unset — uploads will not be able to scan posters." >&2
 fi
 
 # `exec` replaces this shell with Streamlit so it becomes PID 1 and receives SIGTERM directly.

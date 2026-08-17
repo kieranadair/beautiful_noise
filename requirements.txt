@@ -6,8 +6,11 @@ streamlit>=1.61.1
 psycopg[binary,pool]
 # Cloudflare R2 over its S3-compatible API.
 boto3
-# Poster metadata extraction.
-anthropic
+# Poster metadata extraction. OpenRouter speaks the OpenAI wire format, so this is the
+# OpenAI SDK pointed at a different base URL — see core/ai.py. The SDK rather than raw
+# HTTP because its typed exception classes are what make the visitor-facing error message
+# reliable instead of parsed out of an error string.
+openai
 # Local development reads .env; on Railway the same names are real environment variables.
 python-dotenv
 rapidfuzz

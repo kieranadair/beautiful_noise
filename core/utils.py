@@ -64,14 +64,22 @@ def fuzzy_match(value: str | None, existing: list[str], threshold: int = 80) -> 
     match = process.extractOne(value, existing, scorer=fuzz.token_set_ratio, score_cutoff=threshold)
     return match[0] if match else value
 
-def infer_date(mm_dd: str) -> date:
-    """Infer full date from MM-DD string by picking the year closest to today.
-    Returns today's date if input is empty or unparseable."""
-    if not mm_dd:
+def infer_date(month: int | None, day: int | None) -> date:
+    """Infer the full date from a month and day, picking whichever of last/this/next year
+    lands closest to today. Returns today's date if either part is missing, or if the pair
+    isn't a real date.
+
+    Takes two integers rather than an "MM-DD" string on purpose — see the schema note in
+    core/ai.py. The string form was concatenated into an ISO date, so it silently accepted
+    a transposed day/month ("01-05" parsed happily as 5 January) and silently fell back to
+    today when the day exceeded 12. Neither raised, so both produced a wrong date the user
+    had to spot unaided in the review form.
+    """
+    if month is None or day is None:
         return date.today()
     try:
         today = date.today()
-        candidates = [date.fromisoformat(f"{today.year + i}-{mm_dd}") for i in (-1, 0, 1)]
+        candidates = [date(today.year + i, month, day) for i in (-1, 0, 1)]
         return min(candidates, key=lambda d: abs((d - today).days))
     except ValueError:
         return date.today()
@@ -184,7 +192,7 @@ def get_poster_vars(all_posters: list[dict]) -> tuple[list[str], list[str], list
     date_max = max(o["DATE"] for o in all_posters)
     return all_bands, all_venues, all_credits, date_min, date_max
 
-def prepare_review_defaults(headliners: list[str], supports: list[str], date_str: str, venues: list[str], event_name: str | None, all_bands: list[str], all_venues: list[str]) -> tuple[list[str], list[str], date, list[str], str | None]:
+def prepare_review_defaults(headliners: list[str], supports: list[str], month: int | None, day: int | None, venues: list[str], event_name: str | None, all_bands: list[str], all_venues: list[str]) -> tuple[list[str], list[str], date, list[str], str | None]:
     """Normalise, fuzzy-match, and infer date from raw AI extraction values.
     Returns (matched_headliners, matched_supports, inferred_date, matched_venues, normed_event_name)."""
     normed_headliners = [n for b in headliners if (n := normalise(b))]
@@ -192,7 +200,7 @@ def prepare_review_defaults(headliners: list[str], supports: list[str], date_str
     normed_supports = [n for b in supports if (n := normalise(b))]
     matched_supports = [fuzzy_match(b, all_bands, threshold=90) for b in normed_supports]
 
-    inferred_date = infer_date(date_str)
+    inferred_date = infer_date(month, day)
     
     normed_venues = [n for v in venues if (n := normalise(v))]
     matched_venues = [fuzzy_match(v, all_venues, threshold=80) for v in normed_venues]

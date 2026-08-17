@@ -123,8 +123,8 @@ with left:
             matched = None
             if valid:
                 st.write("Populating upload form...")
-                headliners_raw, supports_raw, date_str, venues_raw, event_name = parse_extraction(result)
-                matched_headliners, matched_supports, inferred_date, matched_venues, normed_event_name = prepare_review_defaults(headliners_raw, supports_raw, date_str, venues_raw, event_name, all_bands, all_venues)
+                headliners_raw, supports_raw, month_raw, day_raw, venues_raw, event_name = parse_extraction(result)
+                matched_headliners, matched_supports, inferred_date, matched_venues, normed_event_name = prepare_review_defaults(headliners_raw, supports_raw, month_raw, day_raw, venues_raw, event_name, all_bands, all_venues)
                 matched = {
                     "headliners": matched_headliners,
                     "supports": matched_supports,
