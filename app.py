@@ -3,6 +3,12 @@ import streamlit as st
 from core.config import FAVICON, CONTENT_DIR, NAV_BTN_WIDTH
 
 
+# FAQ (light, conversational help — opens a dialog from the footer)
+@st.dialog("Frequently Asked Questions", width="large")
+def show_faq():
+    st.write((CONTENT_DIR / "faq.md").read_text(encoding="utf-8"))
+    
+
 st.set_page_config(layout="wide", page_title="Beautiful Noise", page_icon=FAVICON)
 
 # Multiselect tags truncate their label by default, but the gallery filters and upload form carry
@@ -32,6 +38,10 @@ if st.button("ARCHIVE A POSTER", type="primary", icon=":material/add:", width=NA
     st.switch_page("views/upload.py")
 
 st.title(f":color[BEAUTIFUL]{{foreground={primary}}} NOISE")
+st.write("A community-driven archive of gig poster art and design from Narrm")
+
+if st.button("About & FAQ", icon=":material/help:", type="tertiary"):
+        show_faq()
 
 # Run pages.
 #
@@ -54,20 +64,12 @@ except Exception:
         icon=":material/error:",
     )
 
-# FAQ (light, conversational help — opens a dialog from the footer)
-@st.dialog("Frequently Asked Questions", width="large")
-def show_faq():
-    st.write((CONTENT_DIR / "faq.md").read_text(encoding="utf-8"))
-
 # Footer section — flows with the page. Deliberately NOT in st.bottom: st.bottom pins to the
 # viewport, and the terms/licensing notice doesn't need to follow the reader down a long gallery.
 st.space("small")
-with st.container(horizontal=True, vertical_alignment="center", gap="small"):
-    if st.button("Learn more about Beautiful Noise", icon=":material/help:", type="tertiary"):
-        show_faq()
-    st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/poster_requests).")
+st.caption("By using Beautiful Noise, you agree to our [Terms of Service](/terms_of_service). Uploaded content remains © the original creator. Archive content is shared under CC BY-NC 4.0 — free to share with credit, no commercial use. Need something corrected or removed? [Submit a request](/poster_requests). For suggestions and anything else, [message us on Instagram](https://www.instagram.com/beautifulnoise.melbourne)")
 
 # Maker credit, on its own line at the very bottom — the usual spot for one. Deliberately "Made
 # by" rather than a © line: the caption above already assigns copyright to uploaders, and a second
 # © against a different name would muddy that.
-st.caption("Made by Kieran Adair")
+st.caption("Made by Kieran Adair.")

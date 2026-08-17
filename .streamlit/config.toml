@@ -27,7 +27,7 @@ codeFont = "monospace"
 
 baseFontSize = 18
 baseFontWeight = 400
-headingFontSizes = ["6rem", "2.5rem", "1.75rem", "1.5rem", "1.25rem", "1rem"]
+headingFontSizes = ["3.5rem", "2.5rem", "1.75rem", "1.5rem", "1.25rem", "1rem"]
 headingFontWeights = [700, 700, 600, 600, 600, 600]
 codeFontSize = "0.875rem"
 

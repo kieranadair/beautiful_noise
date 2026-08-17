@@ -1,8 +1,12 @@
 ### What is Beautiful Noise?
 
-A community-driven archive of gig posters from Narrm's live music scene. Its purpose is to document and preserve them for the future.
+**Beautiful Noise** is a community-driven archive that exists to document and celebrate the poster art of the Narrm music scene.
 
-More importantly, this archive is independent of the algorithm. It's owned by the community that builds it.
+Each week, new gig posters decorate this city's streets - as bold, creative and important as the music they champion.
+
+But too often, they're lost to time once the show they've promoted is over - torn down, pasted over, or lost to the algorithm.
+
+This project seeks to stop that by creating a permanent, independent space to share and preserve this culture of creative art.
 
 ### How do I upload a poster?
 
@@ -30,7 +34,7 @@ For more information, check out the [Terms of Service](/terms_of_service).
 
 Yes, but we take steps to ensure its use is limited and the rights of the designers are respected. When you upload a poster the image goes to a vision model which reads it and hands back: the band names, date, venue, and event name. Its use is limited to reading the posters.
 
-We use Anthropic's Claude for this. Their [commercial terms](https://www.anthropic.com/legal/commercial-terms) commit that inputs and outputs aren't used to train their models, and images are deleted from their systems within 30 days. Your poster isn't used to train image generation models, by Anthropic or anyone else.
+We use Llama 4 Maverick, an open-weights model from Meta. It's reached through [OpenRouter](https://openrouter.ai/privacy), which hands the image to an inference provider ([DeepInfra](https://deepinfra.com/privacy)) to actually run it. Neither trains on what we send them, and we restrict routing so that a poster is only ever handled by providers that don't retain it. Your poster isn't used to train image generation models, by them or anyone else.
 
 ### I made a poster that someone else uploaded — can I claim or remove it?
 

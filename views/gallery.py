@@ -4,25 +4,6 @@ from core.db import get_all_posters
 from core.utils import get_filtered_posters, get_poster_vars, month_range, md_escape
 
 # ---------------------------------------------------------------------------
-# Hero Section
-# ---------------------------------------------------------------------------
-
-primary = st.get_option("theme.primaryColor")
-secondary = st.get_option("theme.linkColor")
-
-st.subheader(f":color[NARRM GIG POSTER ARCHIVE]{{foreground={secondary}}}")
-
-st.write("""**Beautiful Noise** is a community-driven archive that exists to document and celebrate the poster art of the Narrm music scene.
-
-Each week, new gig posters decorate this city's streets - as bold, creative and important as the music they champion.
-
-But too often, they're lost to time once the show they've promoted is over - torn down, pasted over, or lost to the algorithm.
-
-This project seeks to stop that by creating a permanent, independent space to share and preserve this culture of creative art.""")
-
-st.divider()
-
-# ---------------------------------------------------------------------------
 # Constants & session state
 # ---------------------------------------------------------------------------
 
@@ -102,7 +83,7 @@ def poster_grid(all_posters, all_bands, all_venues, all_credits, months):
         _sel = st.pills("Shared with creator's permission", options=["rights_holder"], default=None, key="rights_holder_pills", format_func=lambda o: ":material/check_circle: Shared with creator's permission", label_visibility="collapsed")
     show_community = _sel is None
     st.html(
-        "<style>"
+       "<style>"
         ".st-key-rights-holder-filter [data-testid='stBaseButton-pills']{background:#f7f7f7!important;border-color:#e9e9e9!important;color:#b0b0b0!important;}"
         ".st-key-rights-holder-filter [data-testid='stBaseButton-pills']:hover{background:#efefef!important;border-color:#e0e0e0!important;}"
         ".st-key-rights-holder-filter [data-testid$='Active']{opacity:0.7!important;}"
@@ -246,6 +227,8 @@ months = month_range(date_min, date_max) if date_min else []
 # ---------------------------------------------------------------------------
 # Page heading + grid
 # ---------------------------------------------------------------------------
+
+st.divider()
 
 def count(n: int, noun: str) -> str:
     """'1 poster' / '2 posters'. Only ever wrong at exactly one, which is easy to never

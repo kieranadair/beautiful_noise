@@ -83,10 +83,18 @@ OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 # In production a DeepInfra outage should degrade extraction quality, not stop uploads.
 # require_parameters keeps any host that would ignore the JSON schema out of the rotation:
 # without it a non-compliant host returns prose and run_extraction's json.loads explodes.
+# `zdr` restricts routing to zero-data-retention endpoints, and it is load-bearing for a
+# promise made to visitors: content/faq.md and content/tos.md both tell uploaders their
+# poster is only handled by providers that don't retain it. Verified 2026-08-17 that
+# DeepInfra still qualifies, so this costs nothing — same provider, same latency. If the
+# ZDR pool ever empties, requests fail and the upload page shows "scanning unavailable",
+# which is the correct failure mode: fail closed rather than quietly route a stranger's
+# poster to a provider that keeps it. Do not remove this to fix an outage.
 OPENROUTER_PROVIDER = {
     "order": ["DeepInfra"],
     "allow_fallbacks": True,
     "require_parameters": True,
+    "zdr": True,
 }
 
 # Room for the structured-output JSON and nothing more; this is an extraction task.
